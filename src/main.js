@@ -344,7 +344,8 @@ function mount() {
 function watchScroll() {
   const view = screen()
   if (!view) return
-  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 1)
+  // Порог 32 — размытие не включается от микродвижений
+  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 32)
   view.addEventListener('scroll', sync, { passive: true })
   sync()
 }
