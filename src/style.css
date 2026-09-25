@@ -157,45 +157,44 @@ input {
 }
 
 /* ----------------------------------------------------------- СТАТУС-БАР / ОСТРОВ */
+/*
+ * Четко ограничиваем зону размытия строго по высоте статус-бара iOS (44px).
+ * overflow: hidden намертво отсекает любое размытие ниже этой линии,
+ * гарантируя, что текст не будет двоиться или размываться раньше времени.
+ */
 .status-frost {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: calc(env(safe-area-inset-top, 59px) + 24px);
+  height: 44px; /* Ровная системная высота */
   z-index: 40;
   pointer-events: none;
-  overflow: hidden;
+  overflow: hidden; /* Обрезает контент */
 }
 
+/*
+ * Внутренний контейнер, который отвечает за нативный матовый эффект iOS.
+ * Полностью убираем любые маски (-webkit-mask-image), которые искажали буквы!
+ */
 .status-frost-inner {
   position: absolute;
   inset: 0;
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  /* Маска на том же слое, что и blur — иначе WebKit рисует глухую подложку */
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 100%);
-  transition:
-    background 0.35s ease,
-    backdrop-filter 0.35s ease,
-    -webkit-backdrop-filter 0.35s ease;
+  transition: background 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease;
 }
 
 /*
- * Лёгкий tint: плотная заливка (80%+) превращала зону в непрозрачную панель,
- * и буквы обрывались, вместо размытия.
+ * При скролле включается стандартный нативный эффект Apple:
+ * полупрозрачный фон темы + размытие. Граница снизу идеально острая.
  */
 .app.is-scrolled .status-frost-inner {
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--bg) 38%, transparent) 0%,
-    color-mix(in srgb, var(--bg) 14%, transparent) 50%,
-    transparent 100%
-  );
-  backdrop-filter: blur(22px) saturate(1.45);
-  -webkit-backdrop-filter: blur(22px) saturate(1.45);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--line); /* Тонкая нативная разделительная черта, как в iOS */
 }
 
 .page {
