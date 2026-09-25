@@ -74,6 +74,17 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+html {
+  height: 100%;
+  background-color: #0b1310;
+}
+
+@media (prefers-color-scheme: light) {
+  html {
+    background-color: #f1f5f2;
+  }
+}
+
 html,
 body {
   margin: 0;
@@ -83,6 +94,8 @@ body {
   min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior: none;
+  /* Hard color (not only var) so iOS paints the home-indicator band. */
+  background-color: #0b1310;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--ui);
@@ -93,6 +106,13 @@ body {
   user-select: none;
   -webkit-user-select: none;
   touch-action: manipulation;
+}
+
+@media (prefers-color-scheme: light) {
+  html,
+  body {
+    background-color: #f1f5f2;
+  }
 }
 
 button,
@@ -106,6 +126,13 @@ input {
   min-height: 100%;
   min-height: -webkit-fill-available;
   background: var(--bg);
+  background-color: #0b1310;
+}
+
+@media (prefers-color-scheme: light) {
+  #app {
+    background-color: #f1f5f2;
+  }
 }
 
 /* Fixed to the viewport so standalone mode has no leftover strip anywhere. */
@@ -121,19 +148,13 @@ input {
   margin-inline: auto;
   overflow: hidden;
   background: var(--bg);
+  background-color: #0b1310;
 }
 
-/* Paint the home-indicator band explicitly so iOS never shows a black gap. */
-.app::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--safe-bottom);
-  background: var(--bg);
-  pointer-events: none;
-  z-index: 9;
+@media (prefers-color-scheme: light) {
+  .app {
+    background-color: #f1f5f2;
+  }
 }
 
 .app-onboard {
@@ -831,7 +852,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 64px;
+  bottom: calc(62px + var(--safe-bottom));
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -858,20 +879,25 @@ h1.display {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   /*
-   * Background fills to the physical bottom (app is fixed inset 0).
-   * Do NOT pad the full 34px safe-area under the icons — that reads as an
-   * empty strip. Keep a tight clearance so the home indicator floats over
-   * the tab bar chrome, like native iOS apps.
+   * Pad for the home indicator, but keep the SAME solid fill all the way
+   * down — native iOS tab bars look continuous, not like a black gap.
    */
-  padding: 4px 10px 10px;
+  padding: 6px 12px calc(6px + var(--safe-bottom));
   background: var(--bg);
+  background-color: #0b1310;
+}
+
+@media (prefers-color-scheme: light) {
+  .tabbar {
+    background-color: #f1f5f2;
+  }
 }
 
 .tab-pill {
   position: absolute;
-  top: 4px;
-  left: 10px;
-  width: calc((100% - 20px) / 3);
+  top: 6px;
+  left: 12px;
+  width: calc((100% - 24px) / 3);
   height: 48px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 11%, transparent);

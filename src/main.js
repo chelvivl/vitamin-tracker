@@ -584,6 +584,15 @@ document.addEventListener(
 mount()
 watchForUpdates()
 
+/* Force document background into the iOS home-indicator band. */
+const paintRoot = () => {
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1310'
+  document.documentElement.style.backgroundColor = color
+  document.body.style.backgroundColor = color
+}
+paintRoot()
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintRoot)
+
 setInterval(() => {
   const key = dayKey()
   if (key === paintedDay) return
