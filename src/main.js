@@ -13,7 +13,7 @@ import {
   bootstrapSettings,
   invertSchedule,
   loadState,
-  recentDays,
+  loggedEntries,
   saveState,
   setTaken,
   streakCount,
@@ -22,7 +22,8 @@ import {
 
 let state = loadState()
 let celebrate = false
-let editingKey = null
+let draftVitamin = 'spirulina'
+let formError = ''
 
 function persist() {
   saveState(state)
@@ -30,7 +31,10 @@ function persist() {
 
 function setTab(tab) {
   state = { ...state, tab }
-  editingKey = null
+  formError = ''
+  if (tab === 'history' && state.settings) {
+    draftVitamin = plannedVitamin(new Date(), state.settings) || draftVitamin
+  }
   persist()
   render()
 }
@@ -64,26 +68,23 @@ function takeToday() {
   render()
 }
 
-function toggleHistoryDay(key) {
-  if (!state.settings) return
-  const date = new Date(key + 'T12:00:00')
-  const planned = plannedVitamin(date, state.settings)
-  const current = state.log[key]
-  if (current?.taken) {
-    state = setTaken(state, key, false)
-  } else {
-    state = setTaken(state, key, true, planned)
-    bump()
+function addHistoryEntry(dateValue, vitamin) {
+  if (!dateValue || !vitamin) {
+    formError = 'Укажи дату и витамин'
+    render()
+    return
   }
+  const key = dateValue
+  state = setTaken(state, key, true, vitamin)
+  draftVitamin = vitamin
+  formError = ''
+  bump()
   persist()
   render()
 }
 
-function setDayVitamin(key, vitamin) {
-  const current = state.log[key]
-  state = setTaken(state, key, true, vitamin)
-  if (!current?.taken) bump()
-  editingKey = null
+function removeHistoryEntry(key) {
+  state = setTaken(state, key, false)
   persist()
   render()
 }
@@ -94,6 +95,7 @@ function startOnboarding(vitaminId) {
     settings: bootstrapSettings(vitaminId),
     tab: 'today',
   }
+  draftVitamin = vitaminId
   persist()
   render()
 }
@@ -204,7 +206,8 @@ function screenToday() {
 }
 
 function screenHistory() {
-  const days = recentDays(state, 28)
+  const entries = loggedEntries(state)
+  const today = dayKey()
   return `
     <section class="history-screen enter">
       <header class="top-line">
@@ -213,39 +216,50 @@ function screenHistory() {
           <h1>История</h1>
         </div>
       </header>
-      <p class="lead soft">Нажми день, чтобы отметить или снять приём. Кнопка ⋮ — выбрать вид вручную.</p>
-      <ul class="history-list">
-        ${days
-          .map((d) => {
-            const vit = d.vitamin ? VITAMINS[d.vitamin] : null
-            const open = editingKey === d.key
-            return `
-            <li class="history-item vitamin-${d.vitamin || ''} ${d.taken ? 'is-taken' : ''} ${open ? 'is-open' : ''}">
-              <button class="history-main" type="button" data-toggle-day="${d.key}">
-                <span class="h-date">
-                  <strong>${formatShortDate(d.date)}</strong>
-                  <span>${weekdayShort(d.date)}${d.key === dayKey() ? ' · сегодня' : ''}</span>
-                </span>
-                <span class="h-vit">${vit ? vit.name : '—'}</span>
-                <span class="h-mark" aria-hidden="true"></span>
-              </button>
-              <button class="history-edit" type="button" data-edit-day="${d.key}" aria-label="Изменить вид">⋮</button>
-              ${
-                open
-                  ? `<div class="history-sheet">
-                      ${ORDER.map(
-                        (id) => `
-                        <button type="button" class="sheet-opt vitamin-${id} ${d.vitamin === id ? 'is-selected' : ''}" data-set-day="${d.key}" data-vitamin="${id}">
-                          ${VITAMINS[id].name}
-                        </button>`,
-                      ).join('')}
-                    </div>`
-                  : ''
-              }
-            </li>`
-          })
-          .join('')}
-      </ul>
+
+      <form class="add-card" data-form="add-entry">
+        <p class="settings-label">Добавить приём</p>
+        <label class="field">
+          <span>Дата</span>
+          <input class="date-input" type="date" name="date" value="${today}" max="${today}" required />
+        </label>
+        <div class="vit-switch" role="group" aria-label="Витамин">
+          ${ORDER.map(
+            (id) => `
+            <button type="button" class="vit-chip vitamin-${id} ${draftVitamin === id ? 'is-selected' : ''}" data-draft-vitamin="${id}">
+              ${VITAMINS[id].name}
+            </button>`,
+          ).join('')}
+        </div>
+        ${formError ? `<p class="form-error">${formError}</p>` : ''}
+        <button class="cta add-cta" type="submit">Добавить</button>
+      </form>
+
+      ${
+        entries.length === 0
+          ? `<div class="empty-history">
+              <p class="empty-title">Пока пусто</p>
+              <p class="empty-text">Добавь дату и витамин вручную — или отметь приём на вкладке «Сегодня».</p>
+            </div>`
+          : `<ul class="history-list">
+              ${entries
+                .map((d) => {
+                  const vit = VITAMINS[d.vitamin]
+                  return `
+                  <li class="history-item vitamin-${d.vitamin} is-taken">
+                    <div class="history-main static-row">
+                      <span class="h-date">
+                        <strong>${formatShortDate(d.date)}</strong>
+                        <span>${weekdayShort(d.date)}${d.key === today ? ' · сегодня' : ''}</span>
+                      </span>
+                      <span class="h-vit">${vit ? vit.name : '—'}</span>
+                    </div>
+                    <button class="history-delete" type="button" data-remove-day="${d.key}" aria-label="Удалить">✕</button>
+                  </li>`
+                })
+                .join('')}
+            </ul>`
+      }
     </section>
   `
 }
@@ -282,7 +296,7 @@ function screenMore() {
 
       <div class="settings-card muted-card">
         <p class="settings-label">Как это работает</p>
-        <p class="settings-text">Спирулина и хлорелла чередуются каждый день. В истории можно внести пропущенные дни или поправить вид вручную.</p>
+        <p class="settings-text">Спирулина и хлорелла чередуются каждый день. В истории можно вручную добавить прошлые приёмы.</p>
       </div>
     </section>
   `
@@ -308,20 +322,23 @@ function bind() {
   app.querySelector('[data-action="take"]')?.addEventListener('click', takeToday)
   app.querySelector('[data-action="swap"]')?.addEventListener('click', swapSchedule)
 
-  app.querySelectorAll('[data-toggle-day]').forEach((btn) => {
-    btn.addEventListener('click', () => toggleHistoryDay(btn.dataset.toggleDay))
-  })
-
-  app.querySelectorAll('[data-edit-day]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation()
-      editingKey = editingKey === btn.dataset.editDay ? null : btn.dataset.editDay
+  app.querySelectorAll('[data-draft-vitamin]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      draftVitamin = btn.dataset.draftVitamin
+      formError = ''
       render()
     })
   })
 
-  app.querySelectorAll('[data-set-day]').forEach((btn) => {
-    btn.addEventListener('click', () => setDayVitamin(btn.dataset.setDay, btn.dataset.vitamin))
+  app.querySelector('[data-form="add-entry"]')?.addEventListener('submit', (e) => {
+    e.preventDefault()
+    const form = e.currentTarget
+    const dateValue = form.elements.date?.value
+    addHistoryEntry(dateValue, draftVitamin)
+  })
+
+  app.querySelectorAll('[data-remove-day]').forEach((btn) => {
+    btn.addEventListener('click', () => removeHistoryEntry(btn.dataset.removeDay))
   })
 }
 

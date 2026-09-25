@@ -99,15 +99,16 @@ export function streakCount(state) {
   return streak
 }
 
-export function recentDays(state, count = 21) {
-  const days = []
-  const start = new Date()
-  for (let i = 0; i < count; i++) {
-    const date = new Date(start.getFullYear(), start.getMonth(), start.getDate() - i)
-    const key = dayKey(date)
-    days.push({ date, ...entryFor(state, key) })
-  }
-  return days
+export function loggedEntries(state) {
+  return Object.entries(state.log || {})
+    .filter(([, entry]) => entry?.taken)
+    .map(([key, entry]) => ({
+      key,
+      date: parseDayKey(key),
+      vitamin: entry.vitamin,
+      at: entry.at || null,
+    }))
+    .sort((a, b) => (a.key < b.key ? 1 : a.key > b.key ? -1 : 0))
 }
 
 export function weekStrip(state) {
