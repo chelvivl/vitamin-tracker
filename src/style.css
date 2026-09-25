@@ -858,6 +858,8 @@ h1.display {
 /* ------------------------------------------------------------------ ТАББАР */
 .tabbar {
   --active: 0;
+  /* Если iOS отдаёт 0, всё равно держим минимум под home indicator (iPhone 15 ≈ 34px) */
+  --tab-safe-bottom: max(34px, env(safe-area-inset-bottom, 0px));
   position: fixed;
   bottom: 0;
   left: 0;
@@ -866,14 +868,10 @@ h1.display {
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  align-items: start;
 
-  /* Жестко задаем высоту: 54px на кнопки + нативный отступ iOS (34px на iPhone 15) */
-  height: calc(54px + env(safe-area-inset-bottom, 34px));
-  padding-top: 6px;
-  padding-inline: 10px;
-
-  /* Внутренний отступ снизу оставляет место под домашнюю полосу */
-  padding-bottom: env(safe-area-inset-bottom, 34px);
+  /* Высоту не фиксируем: padding сам поднимает кнопки над полосой */
+  padding: 6px 10px var(--tab-safe-bottom);
 
   background: var(--card);
   background-color: #16211c;
@@ -889,10 +887,6 @@ h1.display {
   }
 }
 
-/*
- * Пилюля фокуса теперь имеет фиксированную высоту 44px
- * и центрируется идеально внутри кнопочной зоны, игнорируя нижний Safe Area padding!
- */
 .tab-pill {
   position: absolute;
   top: 11px;
@@ -905,7 +899,6 @@ h1.display {
   transition: transform 0.42s var(--spring), background 0.3s ease;
 }
 
-/* Сам таб занимает ровно 44px высоты, как и пилюля под ним */
 .tab {
   position: relative;
   z-index: 1;
