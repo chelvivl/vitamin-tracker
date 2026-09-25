@@ -140,7 +140,9 @@ input {
   position: fixed;
   top: 0;
   right: 0;
-  bottom: 0;
+  /* Pull into the home-indicator band so it is painted by our background,
+     not by iOS black. */
+  bottom: calc(-1 * env(safe-area-inset-bottom, 0px));
   left: 0;
   display: grid;
   grid-template-rows: 1fr auto;
@@ -149,6 +151,9 @@ input {
   overflow: hidden;
   background: var(--bg);
   background-color: #0b1310;
+  /* Keep interactive content above the home indicator. */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: light) {
@@ -159,6 +164,7 @@ input {
 
 .app-onboard {
   grid-template-rows: 1fr;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /*
@@ -878,9 +884,7 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /* Icons sit near the physical bottom. Do NOT add safe-area here —
-     that creates the huge empty band. html/body background covers the
-     home-indicator zone in the matching color. */
+  /* Compact — the home-indicator band is covered by .app padding/extension. */
   padding: 4px 12px 8px;
   background: var(--bg);
   background-color: #0b1310;
