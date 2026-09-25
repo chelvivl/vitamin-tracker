@@ -135,12 +135,14 @@ input {
   }
 }
 
-/* Fixed to the viewport — flush to all edges, no safe-area padding at bottom. */
+/* Fixed full-bleed. Shift down into the home-indicator band so the tab bar
+   sits on the physical bottom — do NOT also add padding-bottom (that recreates
+   the empty strip under the icons). */
 .app {
   position: fixed;
   top: 0;
   right: 0;
-  bottom: 0;
+  bottom: calc(0px - env(safe-area-inset-bottom, 0px));
   left: 0;
   display: grid;
   grid-template-rows: 1fr auto;
@@ -759,7 +761,7 @@ h1.display {
   position: relative;
   align-content: center;
   min-height: 100%;
-  padding: calc(24px + var(--safe-top)) 20px calc(28px + var(--safe-bottom));
+  padding: calc(24px + var(--safe-top)) 20px 28px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -878,7 +880,7 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 6px 12px 2px;
+  padding: 8px 12px 4px;
   background: var(--bg);
   background-color: #0b1310;
 }
