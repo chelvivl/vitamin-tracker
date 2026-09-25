@@ -855,15 +855,16 @@ h1.display {
   right: 0;
   z-index: 10;
 
-  /* Сетка на 3 колонки */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  align-items: start;
 
-  /* Верхний паддинг + безопасный отступ снизу для навигации */
-  padding-top: 8px;
+  /* Жестко задаем высоту: 54px на кнопки + нативный отступ iOS (34px на iPhone 15) */
+  height: calc(54px + env(safe-area-inset-bottom, 34px));
+  padding-top: 6px;
   padding-inline: 10px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom, 34px));
+
+  /* Внутренний отступ снизу оставляет место под домашнюю полосу */
+  padding-bottom: env(safe-area-inset-bottom, 34px);
 
   background: var(--card);
   background-color: #16211c;
@@ -879,20 +880,23 @@ h1.display {
   }
 }
 
-/* Зеленый фон под активную кнопку теперь растягивается на всю доступную высоту */
+/*
+ * Пилюля фокуса теперь имеет фиксированную высоту 44px
+ * и центрируется идеально внутри кнопочной зоны, игнорируя нижний Safe Area padding!
+ */
 .tab-pill {
   position: absolute;
-  top: 6px;
+  top: 11px;
   left: 10px;
   width: calc((100% - 20px) / 3);
-  bottom: calc(4px + env(safe-area-inset-bottom, 34px)); /* Учитывает безопасную зону */
+  height: 44px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 14%, transparent);
   transform: translateX(calc(var(--active) * 100%));
   transition: transform 0.42s var(--spring), background 0.3s ease;
 }
 
-/* Сам таб теперь не зажат жесткими 44px, а центрирует контент */
+/* Сам таб занимает ровно 44px высоты, как и пилюля под ним */
 .tab {
   position: relative;
   z-index: 1;
@@ -900,9 +904,9 @@ h1.display {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding-block: 6px;
-  height: 48px; /* Оптимальная высота под палец */
+  gap: 1px;
+  height: 44px;
+  margin-top: 5px;
   border: 0;
   background: transparent;
   color: var(--muted);

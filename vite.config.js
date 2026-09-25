@@ -22,7 +22,6 @@ export default defineConfig({
         theme_color: '#0B1310',
         background_color: '#0B1310',
         display: 'standalone',
-        display_override: ['standalone', 'fullscreen'],
         orientation: 'portrait',
         lang: 'ru',
         start_url: '/vitamin-tracker/',
