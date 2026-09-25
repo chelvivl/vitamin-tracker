@@ -139,6 +139,7 @@ input {
   flex-direction: column;
 }
 
+/* ------------------------------------------------------------- КАРКАС ЭКРАНА */
 .screen {
   position: relative;
   z-index: 1;
@@ -147,21 +148,25 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 12px) 18px 12px;
+  /* Увеличиваем верхний отступ, чтобы контент начинался строго ПОД островом */
+  padding: calc(var(--safe-top) + 20px) 18px 0px;
   background: transparent;
+
+  /* Резервируем место снизу под фиксированный таббар, чтобы контент не перекрывался кнопками */
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 34px));
 }
 
+/* ----------------------------------------------------------- СТАТУС-БАР / ОСТРОВ */
 /*
- * Frost ONLY the Dynamic Island / status-bar strip (exactly safe-top tall).
- * overflow:hidden clips backdrop-filter bleed that would otherwise soften
- * the first line of content below the red line.
+ * Ограничиваем высоту размытия строго размером Динамического острова (44px).
+ * Текст больше не будет размываться раньше времени.
  */
 .status-frost {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: var(--safe-top);
+  height: 44px;
   z-index: 40;
   pointer-events: none;
   overflow: hidden;
@@ -823,7 +828,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(64px + env(safe-area-inset-bottom, 34px));
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -841,17 +846,22 @@ h1.display {
   box-shadow: var(--shadow-lg);
 }
 
-/* ---------------------------------------------------------------- tab bar */
-
+/* ------------------------------------------------------------------ ТАББАР */
 .tabbar {
   --active: 0;
-  position: relative;
+  /* Меняем на fixed, чтобы панель намертво сидела на своем месте */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
-  flex: 0 0 auto;
+
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /* Фон таб-бара сам заливает зону home indicator */
-  padding: 8px 10px calc(8px + var(--safe-bottom));
+
+  /* ИСПОЛЬЗУЕМ КОРРЕКТНЫЙ env() НАПРЯМУЮ: если iOS не отдаст значение, подставится фолбек 34px */
+  padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 34px));
+
   background: var(--card);
   background-color: #16211c;
   border-top: 1px solid var(--line);
