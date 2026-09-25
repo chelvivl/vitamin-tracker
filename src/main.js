@@ -1,5 +1,6 @@
 import './style.css'
 import {
+  GUIDE_PAIR,
   ORDER,
   VITAMINS,
   dayKey,
@@ -269,6 +270,51 @@ function buildLabel() {
   }).format(built)
 }
 
+function guideCardHtml(id) {
+  const vit = VITAMINS[id]
+  return `
+    <article class="guide" data-vitamin="${id}" data-guide="${id}">
+      <button class="guide-head" type="button" data-guide-toggle="${id}" aria-expanded="false">
+        <span class="guide-mark">${algaeMark(id)}</span>
+        <span class="guide-titles">
+          <strong class="display">${vit.name}</strong>
+          <span class="guide-latin">${vit.latin}</span>
+        </span>
+        <span class="guide-chev" aria-hidden="true"></span>
+      </button>
+      <div class="guide-body" hidden>
+        <p class="guide-tagline">${vit.tagline}</p>
+        <p class="guide-about">${vit.about}</p>
+
+        <p class="guide-section">Состав</p>
+        <div class="guide-stats">
+          ${vit.composition
+            .map(
+              (row) => `
+            <div class="guide-stat">
+              <span>${row.label}</span>
+              <strong>${row.value}</strong>
+            </div>`,
+            )
+            .join('')}
+        </div>
+
+        <p class="guide-section">Что внутри</p>
+        <ul class="guide-chips">
+          ${vit.nutrients.map((n) => `<li>${n}</li>`).join('')}
+        </ul>
+
+        <p class="guide-section">Для чего</p>
+        <ul class="guide-list">
+          ${vit.benefits.map((b) => `<li>${b}</li>`).join('')}
+        </ul>
+
+        <p class="guide-tip">${vit.tip}</p>
+      </div>
+    </article>
+  `
+}
+
 function moreHtml() {
   const id = todayVitamin()
   const next = otherVitamin(id)
@@ -299,6 +345,16 @@ function moreHtml() {
       <div class="card">
         <p class="card-label">Как это работает</p>
         <p class="card-text">Спирулина — овальная таблетка, хлорелла — круглая. Идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
+      </div>
+
+      <div class="guide-block">
+        <p class="card-label">Справка</p>
+        ${ORDER.map(guideCardHtml).join('')}
+        <div class="guide-pair">
+          <p class="guide-pair-title">${GUIDE_PAIR.title}</p>
+          <p class="guide-pair-text">${GUIDE_PAIR.text}</p>
+          <p class="guide-pair-note">${GUIDE_PAIR.note}</p>
+        </div>
       </div>
 
       <div class="card">
@@ -512,6 +568,17 @@ function swapSchedule() {
   crossfade(pair)
 }
 
+function toggleGuide(id) {
+  const card = root.querySelector(`[data-guide="${id}"]`)
+  if (!card) return
+  const open = card.classList.toggle('is-open')
+  const btn = card.querySelector('[data-guide-toggle]')
+  const body = card.querySelector('.guide-body')
+  btn?.setAttribute('aria-expanded', String(open))
+  if (body) body.hidden = !open
+  haptic(6)
+}
+
 function notify(message) {
   toast(root.querySelector('[data-toasts]'), message)
 }
@@ -530,6 +597,9 @@ root.addEventListener('click', (event) => {
 
   if (hit('[data-action="take"]')) return takeToday()
   if (hit('[data-action="swap"]')) return swapSchedule()
+
+  const guideToggle = hit('[data-guide-toggle]')
+  if (guideToggle) return toggleGuide(guideToggle.dataset.guideToggle)
 
   const draft = hit('[data-draft]')
   if (draft) return selectDraft(draft.dataset.draft)
