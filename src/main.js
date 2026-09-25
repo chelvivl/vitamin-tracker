@@ -21,16 +21,6 @@ import {
   weekStrip,
 } from './store.js'
 import {
-  armReminderForToday,
-  ensureReminderPermission,
-  initReminders,
-  nextReminderLabel,
-  reminderPermission,
-  reminderSupported,
-  sendTestReminder,
-  syncReminders,
-} from './reminders.js'
-import {
   animateRowIn,
   animateRowOut,
   celebrate,
@@ -54,10 +44,7 @@ let draftVitamin = 'spirulina'
 let paintedDay = dayKey()
 
 const todayVitamin = () => plannedVitamin(new Date(), state.settings)
-const persist = () => {
-  saveState(state)
-  syncReminders()
-}
+const persist = () => saveState(state)
 function shell() {
   return root.querySelector('.app')
 }
@@ -310,39 +297,6 @@ function moreHtml() {
       </div>
 
       <div class="card">
-        <p class="card-label">Напоминания</p>
-        <p class="card-text">Один раз в день в выбранное время. Пока приложение закрыто или усыплено iPhone, таймер может не сработать — открой приложение около этого времени или оставь его в фоне.</p>
-        <label class="toggle-row">
-          <span>Ежедневное напоминание</span>
-          <input class="toggle" type="checkbox" data-remind-enabled
-                 ${state.settings?.remindersEnabled ? 'checked' : ''}
-                 ${reminderSupported() ? '' : 'disabled'} />
-        </label>
-        <div class="field remind-time-field">
-          <label class="field-label" for="remind-at">Время</label>
-          <input class="input" id="remind-at" type="time" data-remind-at
-                 value="${state.settings?.remindAt || '10:00'}"
-                 ${state.settings?.remindersEnabled ? '' : 'disabled'} />
-        </div>
-        ${
-          state.settings?.remindersEnabled && reminderPermission() === 'granted'
-            ? `<p class="note" data-remind-next>Следующее: ${nextReminderLabel(state.settings) || '—'}</p>`
-            : ''
-        }
-        <button class="btn btn-soft" type="button" data-action="remind-test"
-                ${reminderSupported() ? '' : 'disabled'}>
-          Проверить уведомление
-        </button>
-        ${
-          reminderSupported()
-            ? reminderPermission() === 'denied'
-              ? '<p class="note">Уведомления запрещены — разрешите их в Настройки → Водоросли.</p>'
-              : ''
-            : '<p class="note">Уведомления в этом браузере недоступны.</p>'
-        }
-      </div>
-
-      <div class="card">
         <p class="card-label">Как это работает</p>
         <p class="card-text">Спирулина — овальная таблетка, хлорелла — круглая. Идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
       </div>
@@ -576,73 +530,12 @@ root.addEventListener('click', (event) => {
 
   if (hit('[data-action="take"]')) return takeToday()
   if (hit('[data-action="swap"]')) return swapSchedule()
-  if (hit('[data-action="remind-test"]')) return testReminder()
 
   const draft = hit('[data-draft]')
   if (draft) return selectDraft(draft.dataset.draft)
 
   const remove = hit('[data-remove]')
   if (remove) return removeEntry(remove.dataset.remove)
-})
-
-async function testReminder() {
-  const result = await sendTestReminder()
-  if (result.ok) {
-    haptic()
-    notify('Тестовое уведомление отправлено')
-    return
-  }
-  if (result.reason === 'permission') {
-    notify('Разрешите уведомления в настройках iPhone')
-    return
-  }
-  notify('Не удалось показать уведомление')
-}
-
-root.addEventListener('change', async (event) => {
-  const target = event.target
-  if (!(target instanceof HTMLInputElement) || !state.settings) return
-
-  if (target.matches('[data-remind-enabled]')) {
-    if (target.checked) {
-      const ok = await ensureReminderPermission()
-      if (!ok) {
-        target.checked = false
-        notify('Разрешите уведомления в настройках iPhone')
-        return
-      }
-      state = {
-        ...state,
-        settings: { ...state.settings, remindersEnabled: true },
-      }
-      persist()
-      haptic()
-      notify('Напоминания включены')
-    } else {
-      state = {
-        ...state,
-        settings: { ...state.settings, remindersEnabled: false },
-      }
-      persist()
-    }
-    const time = root.querySelector('[data-remind-at]')
-    if (time) time.disabled = !target.checked
-    return
-  }
-
-  if (target.matches('[data-remind-at]')) {
-    const value = target.value || '10:00'
-    armReminderForToday(value)
-    state = {
-      ...state,
-      settings: { ...state.settings, remindAt: value },
-    }
-    persist()
-    const next = nextReminderLabel(state.settings)
-    notify(next ? `Ждём ${next}` : `Напоминание в ${value}`)
-    const label = root.querySelector('[data-remind-next]')
-    if (label) label.textContent = `Следующее: ${next || '—'}`
-  }
 })
 
 root.addEventListener('submit', (event) => {
@@ -691,7 +584,6 @@ document.addEventListener(
 
 mount()
 watchForUpdates()
-initReminders(() => ({ settings: state.settings, log: state.log }))
 
 const paintRoot = () => {
   const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1310'

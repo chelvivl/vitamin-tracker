@@ -38,8 +38,6 @@ export function normalizeSettings(settings) {
   return {
     anchorDayKey: settings.anchorDayKey,
     anchorVitamin: settings.anchorVitamin,
-    remindAt: typeof settings.remindAt === 'string' ? settings.remindAt : '10:00',
-    remindersEnabled: Boolean(settings.remindersEnabled),
   }
 }
 
@@ -47,8 +45,6 @@ export function bootstrapSettings(vitaminId) {
   return {
     anchorDayKey: dayKey(),
     anchorVitamin: vitaminId,
-    remindAt: '10:00',
-    remindersEnabled: false,
   }
 }
 
