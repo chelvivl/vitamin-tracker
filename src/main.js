@@ -308,7 +308,6 @@ function screenHtml(tab) {
 function mount() {
   if (!state.settings) {
     root.innerHTML = `<div class="app app-onboard" data-vitamin="spirulina">
-      <span class="veil" aria-hidden="true"></span>
       ${onboardingHtml()}
     </div>`
     return
@@ -317,7 +316,6 @@ function mount() {
   const tab = state.tab || 'today'
   root.innerHTML = `
     <div class="app" data-vitamin="${todayVitamin()}">
-      <span class="veil" aria-hidden="true"></span>
       <main class="screen" data-screen>${screenHtml(tab)}</main>
       <div class="toast-host" data-toasts></div>
       <nav class="tabbar" style="--active:${TABS.findIndex((t) => t.id === tab)}" aria-label="Навигация">
@@ -332,16 +330,6 @@ function mount() {
       </nav>
     </div>
   `
-  watchScroll()
-}
-
-/** Frost the status bar strip only while content sits under it. */
-function watchScroll() {
-  const view = screen()
-  if (!view) return
-  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 2)
-  view.addEventListener('scroll', sync, { passive: true })
-  sync()
 }
 
 function switchTab(tab) {
@@ -356,7 +344,6 @@ function switchTab(tab) {
   const view = screen()
   view.innerHTML = screenHtml(tab)
   view.scrollTop = 0
-  shell().classList.remove('is-scrolled')
   slideIn(view.firstElementChild, direction)
 
   const bar = root.querySelector('.tabbar')

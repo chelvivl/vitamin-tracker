@@ -112,8 +112,8 @@ input {
   margin-inline: auto;
   overflow: hidden;
   background:
-    radial-gradient(760px 340px at 88% 34%, color-mix(in srgb, var(--tint) 20%, transparent), transparent 62%),
-    linear-gradient(180deg, var(--bg), var(--bg-2));
+    radial-gradient(1100px 900px at 85% 20%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 85%),
+    var(--bg);
   transition: background 0.7s var(--spring);
 }
 
@@ -121,36 +121,14 @@ input {
   grid-template-rows: 1fr;
 }
 
-/*
- * Status bar / Dynamic Island row: the app background runs edge to edge, and
- * content scrolls underneath. The frosted material is invisible at rest and
- * only fades in once something is actually behind it.
- */
-.veil {
-  position: absolute;
-  inset: 0 0 auto;
-  height: var(--safe-top);
-  z-index: 20;
-  pointer-events: none;
-  background: transparent;
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
-  mask-image: linear-gradient(to bottom, #000 88%, transparent);
-  -webkit-mask-image: linear-gradient(to bottom, #000 88%, transparent);
-  transition: background 0.3s ease;
-}
-
-.app.is-scrolled .veil {
-  background: color-mix(in srgb, var(--bg) 42%, transparent);
-}
-
+/* Content runs edge to edge, including the status bar / Dynamic Island row. */
 .screen {
   position: relative;
   z-index: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 10px) 18px 14px;
+  padding: 10px 18px 14px;
 }
 
 .page {
@@ -842,11 +820,8 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 6px 12px calc(2px + var(--safe-bottom));
-  background: color-mix(in srgb, var(--bg) 82%, transparent);
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
-  border-top: 1px solid var(--line);
+  padding: 6px 12px calc(6px + var(--safe-bottom));
+  background: transparent;
 }
 
 .tab-pill {
