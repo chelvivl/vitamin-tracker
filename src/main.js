@@ -1,199 +1,379 @@
 import './style.css'
+import {
+  VITAMINS,
+  ORDER,
+  dayKey,
+  formatLongDate,
+  formatShortDate,
+  otherVitamin,
+  plannedVitamin,
+  weekdayShort,
+} from './lib.js'
+import {
+  bootstrapSettings,
+  invertSchedule,
+  loadState,
+  recentDays,
+  saveState,
+  setTaken,
+  streakCount,
+  weekStrip,
+} from './store.js'
 
-const STORAGE_KEY = 'vt:taken'
-const TAB_KEY = 'vt:tab'
+let state = loadState()
+let celebrate = false
+let editingKey = null
 
-const ITEMS = [
-  { id: 'd3', name: 'Витамин D3', time: 'Утро', slot: 'morning' },
-  { id: 'omega', name: 'Омега-3', time: 'Обед', slot: 'day' },
-  { id: 'mag', name: 'Магний', time: 'Вечер', slot: 'evening' },
-]
-
-const TABS = [
-  { id: 'today', label: 'Сегодня', icon: 'today' },
-  { id: 'list', label: 'Список', icon: 'list' },
-  { id: 'more', label: 'Ещё', icon: 'more' },
-]
-
-function todayKey() {
-  const d = new Date()
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`
+function persist() {
+  saveState(state)
 }
 
-function loadTaken() {
+function setTab(tab) {
+  state = { ...state, tab }
+  editingKey = null
+  persist()
+  render()
+}
+
+function bump() {
   try {
-    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
-    return raw.day === todayKey() ? new Set(raw.ids || []) : new Set()
+    navigator.vibrate?.(12)
   } catch {
-    return new Set()
+    /* ignore */
   }
 }
 
-function saveTaken(taken) {
-  localStorage.setItem(
-    STORAGE_KEY,
-    JSON.stringify({ day: todayKey(), ids: [...taken] }),
-  )
+function takeToday() {
+  if (!state.settings) return
+  const key = dayKey()
+  const vitamin = plannedVitamin(new Date(), state.settings)
+  const already = state.log[key]?.taken
+  if (already) {
+    state = setTaken(state, key, false)
+    celebrate = false
+  } else {
+    state = setTaken(state, key, true, vitamin)
+    celebrate = true
+    bump()
+    window.setTimeout(() => {
+      celebrate = false
+      render()
+    }, 900)
+  }
+  persist()
+  render()
 }
 
-function dateLabel() {
-  return new Intl.DateTimeFormat('ru-RU', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  }).format(new Date())
+function toggleHistoryDay(key) {
+  if (!state.settings) return
+  const date = new Date(key + 'T12:00:00')
+  const planned = plannedVitamin(date, state.settings)
+  const current = state.log[key]
+  if (current?.taken) {
+    state = setTaken(state, key, false)
+  } else {
+    state = setTaken(state, key, true, planned)
+    bump()
+  }
+  persist()
+  render()
 }
 
-function icon(name, active) {
-  const stroke = active ? 'currentColor' : 'currentColor'
+function setDayVitamin(key, vitamin) {
+  const current = state.log[key]
+  state = setTaken(state, key, true, vitamin)
+  if (!current?.taken) bump()
+  editingKey = null
+  persist()
+  render()
+}
+
+function startOnboarding(vitaminId) {
+  state = {
+    ...state,
+    settings: bootstrapSettings(vitaminId),
+    tab: 'today',
+  }
+  persist()
+  render()
+}
+
+function swapSchedule() {
+  state = { ...state, settings: invertSchedule(state.settings) }
+  persist()
+  render()
+}
+
+function icon(name) {
   if (name === 'today') {
-    return `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="3" fill="none" stroke="${stroke}" stroke-width="1.8"/><path d="M8 3.5v3M16 3.5v3M4 9.5h16" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="14.5" r="1.6" fill="${stroke}"/></svg>`
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5v3M16 3.5v3M4.5 9.5h15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="5" width="16" height="15" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 14.2l2 2 4.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
   }
-  if (name === 'list') {
-    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7h10M9 12h10M9 17h10" fill="none" stroke="${stroke}" stroke-width="1.8" stroke-linecap="round"/><circle cx="5.5" cy="7" r="1.3" fill="${stroke}"/><circle cx="5.5" cy="12" r="1.3" fill="${stroke}"/><circle cx="5.5" cy="17" r="1.3" fill="${stroke}"/></svg>`
+  if (name === 'history') {
+    return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.8v4.4l3 1.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
   }
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6.5" cy="12" r="1.5" fill="${stroke}"/><circle cx="12" cy="12" r="1.5" fill="${stroke}"/><circle cx="17.5" cy="12" r="1.5" fill="${stroke}"/></svg>`
+  return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.8 19.2a6.2 6.2 0 0 1 12.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
 }
 
-let taken = loadTaken()
-let tab = localStorage.getItem(TAB_KEY) || 'today'
-
-function setTab(next) {
-  tab = next
-  localStorage.setItem(TAB_KEY, tab)
-  render()
+function algaeMark(id) {
+  if (id === 'spirulina') {
+    return `<svg class="mark-svg" viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5EEAD4"/><stop offset="1" stop-color="#0F766E"/></linearGradient></defs><circle cx="40" cy="40" r="30" fill="url(#sg)" opacity=".25"/><path d="M24 48c8-18 24-28 36-26-10 8-16 20-14 34-10-2-18-4-22-8Z" fill="url(#sg)"/><path d="M28 30c6 2 10 8 9 16" fill="none" stroke="#99F6E4" stroke-width="3" stroke-linecap="round" opacity=".7"/></svg>`
+  }
+  return `<svg class="mark-svg" viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#86EFAC"/><stop offset="1" stop-color="#166534"/></linearGradient></defs><circle cx="40" cy="40" r="30" fill="url(#cg)" opacity=".22"/><circle cx="40" cy="40" r="16" fill="url(#cg)"/><circle cx="40" cy="40" r="6" fill="#DCFCE7" opacity=".85"/><circle cx="28" cy="28" r="5" fill="url(#cg)" opacity=".7"/><circle cx="54" cy="30" r="4" fill="url(#cg)" opacity=".55"/></svg>`
 }
 
-function toggleItem(id) {
-  if (taken.has(id)) taken.delete(id)
-  else taken.add(id)
-  saveTaken(taken)
-  render()
-}
-
-function progress() {
-  const total = ITEMS.length
-  const done = ITEMS.filter((i) => taken.has(i.id)).length
-  return { done, total, pct: total ? Math.round((done / total) * 100) : 0 }
-}
-
-function screenToday() {
-  const { done, total, pct } = progress()
+function onboarding() {
   return `
-    <header class="nav-header">
-      <div class="nav-header-text">
-        <p class="kicker">${dateLabel()}</p>
-        <h1>Сегодня</h1>
+    <section class="onboard enter">
+      <div class="orb orb-a"></div>
+      <div class="orb orb-b"></div>
+      <p class="eyebrow">Водоросли</p>
+      <h1>Что принимаешь<br/>сегодня?</h1>
+      <p class="lead">Дальше приложение само чередует спирулину и хлореллу каждый день.</p>
+      <div class="pick-grid">
+        ${ORDER.map(
+          (id) => `
+          <button class="pick-card vitamin-${id}" type="button" data-boot="${id}">
+            <span class="pick-visual">${algaeMark(id)}</span>
+            <span class="pick-name">${VITAMINS[id].name}</span>
+            <span class="pick-hint">${VITAMINS[id].hint}</span>
+          </button>`,
+        ).join('')}
       </div>
-      <div class="ring" style="--p:${pct}" aria-label="Выполнено ${done} из ${total}">
-        <span>${done}/${total}</span>
-      </div>
-    </header>
-    <section class="content">
-      <ul class="rows" role="list">
-        ${ITEMS.map((item) => {
-          const on = taken.has(item.id)
-          return `
-            <li>
-              <button class="row ${on ? 'is-done' : ''}" type="button" data-id="${item.id}" aria-pressed="${on}">
-                <span class="check" aria-hidden="true"></span>
-                <span class="row-body">
-                  <span class="title">${item.name}</span>
-                  <span class="subtitle">${item.time}</span>
-                </span>
-              </button>
-            </li>`
-        }).join('')}
-      </ul>
     </section>
   `
 }
 
-function screenList() {
+function screenToday() {
+  const today = new Date()
+  const vitaminId = plannedVitamin(today, state.settings)
+  const vit = VITAMINS[vitaminId]
+  const tomorrow = VITAMINS[otherVitamin(vitaminId)]
+  const key = dayKey(today)
+  const taken = Boolean(state.log[key]?.taken)
+  const streak = streakCount(state)
+  const week = weekStrip(state)
+
   return `
-    <header class="nav-header">
-      <div class="nav-header-text">
-        <p class="kicker">Каталог</p>
-        <h1>Список</h1>
+    <section class="today-screen vitamin-${vitaminId} ${celebrate ? 'is-celebrate' : ''} enter">
+      <div class="ambient" aria-hidden="true">
+        <span class="blob b1"></span>
+        <span class="blob b2"></span>
+        <span class="blob b3"></span>
       </div>
-    </header>
-    <section class="content">
-      <ul class="rows" role="list">
-        ${ITEMS.map(
-          (item) => `
-          <li>
-            <div class="row static">
-              <span class="dot" aria-hidden="true"></span>
-              <span class="row-body">
-                <span class="title">${item.name}</span>
-                <span class="subtitle">Приём: ${item.time.toLowerCase()}</span>
-              </span>
-            </div>
-          </li>`,
-        ).join('')}
+
+      <header class="top-line">
+        <div>
+          <p class="eyebrow">${formatLongDate(today)}</p>
+          <h1>Сегодня</h1>
+        </div>
+        <div class="streak ${streak ? 'has' : ''}" title="Серия дней подряд">
+          <span class="streak-fire" aria-hidden="true">✦</span>
+          <span>${streak}</span>
+        </div>
+      </header>
+
+      <div class="week" role="list">
+        ${week
+          .map(
+            (d) => `
+          <div class="week-day ${d.isToday ? 'is-today' : ''} ${d.taken ? 'is-taken' : ''} vitamin-${d.vitamin || ''}" role="listitem">
+            <span class="wd">${weekdayShort(d.date)}</span>
+            <span class="dn">${d.date.getDate()}</span>
+            <span class="dot">${d.vitamin ? VITAMINS[d.vitamin].short : '·'}</span>
+          </div>`,
+          )
+          .join('')}
+      </div>
+
+      <article class="hero-card">
+        <div class="hero-visual">${algaeMark(vitaminId)}</div>
+        <p class="hero-kicker">${taken ? 'Принято' : 'На сегодня'}</p>
+        <h2 class="hero-title">${vit.name}</h2>
+        <p class="hero-sub">Завтра — ${tomorrow.name}</p>
+
+        <button class="cta ${taken ? 'is-done' : ''}" type="button" data-action="take" aria-pressed="${taken}">
+          <span class="cta-glow" aria-hidden="true"></span>
+          <span class="cta-label">${taken ? 'Отменить отметку' : 'Отметить приём'}</span>
+          <span class="cta-check" aria-hidden="true"></span>
+        </button>
+      </article>
+
+      <p class="foot-hint">Чередование: день через день. Расписание можно поправить во вкладке «Ещё».</p>
+    </section>
+  `
+}
+
+function screenHistory() {
+  const days = recentDays(state, 28)
+  return `
+    <section class="history-screen enter">
+      <header class="top-line">
+        <div>
+          <p class="eyebrow">Журнал</p>
+          <h1>История</h1>
+        </div>
+      </header>
+      <p class="lead soft">Нажми день, чтобы отметить или снять приём. Кнопка ⋮ — выбрать вид вручную.</p>
+      <ul class="history-list">
+        ${days
+          .map((d) => {
+            const vit = d.vitamin ? VITAMINS[d.vitamin] : null
+            const open = editingKey === d.key
+            return `
+            <li class="history-item vitamin-${d.vitamin || ''} ${d.taken ? 'is-taken' : ''} ${open ? 'is-open' : ''}">
+              <button class="history-main" type="button" data-toggle-day="${d.key}">
+                <span class="h-date">
+                  <strong>${formatShortDate(d.date)}</strong>
+                  <span>${weekdayShort(d.date)}${d.key === dayKey() ? ' · сегодня' : ''}</span>
+                </span>
+                <span class="h-vit">${vit ? vit.name : '—'}</span>
+                <span class="h-mark" aria-hidden="true"></span>
+              </button>
+              <button class="history-edit" type="button" data-edit-day="${d.key}" aria-label="Изменить вид">⋮</button>
+              ${
+                open
+                  ? `<div class="history-sheet">
+                      ${ORDER.map(
+                        (id) => `
+                        <button type="button" class="sheet-opt vitamin-${id} ${d.vitamin === id ? 'is-selected' : ''}" data-set-day="${d.key}" data-vitamin="${id}">
+                          ${VITAMINS[id].name}
+                        </button>`,
+                      ).join('')}
+                    </div>`
+                  : ''
+              }
+            </li>`
+          })
+          .join('')}
       </ul>
-      <p class="empty-note">Редактирование добавим по ТЗ</p>
     </section>
   `
 }
 
 function screenMore() {
+  const todayId = plannedVitamin(new Date(), state.settings)
+  const tomorrowId = otherVitamin(todayId)
   return `
-    <header class="nav-header">
-      <div class="nav-header-text">
-        <p class="kicker">Приложение</p>
-        <h1>Ещё</h1>
+    <section class="more-screen enter">
+      <header class="top-line">
+        <div>
+          <p class="eyebrow">Настройки</p>
+          <h1>Ещё</h1>
+        </div>
+      </header>
+
+      <div class="settings-card">
+        <p class="settings-label">Сейчас в расписании</p>
+        <div class="pair">
+          <div class="pair-item vitamin-${todayId}">
+            <span>Сегодня</span>
+            <strong>${VITAMINS[todayId].name}</strong>
+          </div>
+          <div class="pair-swap" aria-hidden="true">⇄</div>
+          <div class="pair-item vitamin-${tomorrowId}">
+            <span>Завтра</span>
+            <strong>${VITAMINS[tomorrowId].name}</strong>
+          </div>
+        </div>
+        <button class="ghost-btn" type="button" data-action="swap">
+          Поменять местами
+        </button>
       </div>
-    </header>
-    <section class="content">
-      <ul class="rows grouped" role="list">
-        <li><div class="row static"><span class="row-body"><span class="title">Напоминания</span><span class="subtitle">Скоро</span></span></div></li>
-        <li><div class="row static"><span class="row-body"><span class="title">История</span><span class="subtitle">Скоро</span></span></div></li>
-        <li><div class="row static"><span class="row-body"><span class="title">О приложении</span><span class="subtitle">Vitamin Tracker 0.1</span></span></div></li>
-      </ul>
+
+      <div class="settings-card muted-card">
+        <p class="settings-label">Как это работает</p>
+        <p class="settings-text">Спирулина и хлорелла чередуются каждый день. В истории можно внести пропущенные дни или поправить вид вручную.</p>
+      </div>
     </section>
   `
 }
 
+const TABS = [
+  { id: 'today', label: 'Сегодня', icon: 'today' },
+  { id: 'history', label: 'История', icon: 'history' },
+  { id: 'more', label: 'Ещё', icon: 'more' },
+]
+
+function bind() {
+  const app = document.querySelector('#app')
+
+  app.querySelectorAll('[data-boot]').forEach((btn) => {
+    btn.addEventListener('click', () => startOnboarding(btn.dataset.boot))
+  })
+
+  app.querySelectorAll('[data-tab]').forEach((btn) => {
+    btn.addEventListener('click', () => setTab(btn.dataset.tab))
+  })
+
+  app.querySelector('[data-action="take"]')?.addEventListener('click', takeToday)
+  app.querySelector('[data-action="swap"]')?.addEventListener('click', swapSchedule)
+
+  app.querySelectorAll('[data-toggle-day]').forEach((btn) => {
+    btn.addEventListener('click', () => toggleHistoryDay(btn.dataset.toggleDay))
+  })
+
+  app.querySelectorAll('[data-edit-day]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      editingKey = editingKey === btn.dataset.editDay ? null : btn.dataset.editDay
+      render()
+    })
+  })
+
+  app.querySelectorAll('[data-set-day]').forEach((btn) => {
+    btn.addEventListener('click', () => setDayVitamin(btn.dataset.setDay, btn.dataset.vitamin))
+  })
+}
+
 function render() {
   const app = document.querySelector('#app')
+  const ready = Boolean(state.settings)
+  const tab = state.tab || 'today'
+
+  if (!ready) {
+    app.innerHTML = `<div class="app-shell onboard-shell">${onboarding()}</div>`
+    bind()
+    return
+  }
+
   const body =
-    tab === 'list' ? screenList() : tab === 'more' ? screenMore() : screenToday()
+    tab === 'history' ? screenHistory() : tab === 'more' ? screenMore() : screenToday()
+
+  const vitaminId = plannedVitamin(new Date(), state.settings)
 
   app.innerHTML = `
-    <div class="app-shell">
-      <main class="screen" id="screen">${body}</main>
+    <div class="app-shell theme-${vitaminId}">
+      <main class="screen">${body}</main>
       <nav class="tabbar" aria-label="Навигация">
         ${TABS.map((t) => {
           const active = tab === t.id
           return `
             <button class="tab ${active ? 'is-active' : ''}" type="button" data-tab="${t.id}" aria-current="${active ? 'page' : 'false'}">
-              <span class="tab-icon">${icon(t.icon, active)}</span>
+              <span class="tab-icon">${icon(t.icon)}</span>
               <span class="tab-label">${t.label}</span>
             </button>`
         }).join('')}
       </nav>
     </div>
   `
-
-  app.querySelectorAll('[data-tab]').forEach((btn) => {
-    btn.addEventListener('click', () => setTab(btn.dataset.tab))
-  })
-
-  app.querySelectorAll('.row[data-id]').forEach((btn) => {
-    btn.addEventListener('click', () => toggleItem(btn.dataset.id))
-  })
+  bind()
 }
 
-function hardenTouch() {
-  document.addEventListener(
-    'touchmove',
-    (e) => {
-      if (!e.target.closest?.('.screen')) e.preventDefault()
-    },
-    { passive: false },
-  )
-}
+document.addEventListener(
+  'touchmove',
+  (e) => {
+    if (!e.target.closest?.('.screen, .history-list, .onboard')) e.preventDefault()
+  },
+  { passive: false },
+)
 
-hardenTouch()
 render()
+
+// Keep "today" fresh around midnight if app stays open
+setInterval(() => {
+  const key = dayKey()
+  if (state._paintDay !== key) {
+    state._paintDay = key
+    render()
+  }
+}, 60_000)
