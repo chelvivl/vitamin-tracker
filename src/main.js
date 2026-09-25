@@ -344,8 +344,7 @@ function mount() {
 function watchScroll() {
   const view = screen()
   if (!view) return
-  // Класс добавится, когда заголовок реально начнет приближаться к острову
-  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 8)
+  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 1)
   view.addEventListener('scroll', sync, { passive: true })
   sync()
 }

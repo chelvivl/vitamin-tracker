@@ -76,11 +76,11 @@
 
 /*
  * НАЧАЛО ЧИСТЫХ ПРАВОК ДЛЯ КАРКАСА ПРИЛОЖЕНИЯ
- * Полностью убираем fill-available и костыльные body::after
+ * 100vh — честный edge-to-edge в iOS PWA с black-translucent (без сдвига dvh)
  */
 html {
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100vh;
+  height: 100vh;
   background-color: var(--bg);
 }
 
@@ -89,8 +89,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100vh;
+  height: 100vh;
   overflow: hidden;
   overscroll-behavior: none;
   background: var(--bg);
@@ -113,13 +113,14 @@ input {
 
 #app {
   width: 100%;
-  min-height: 100dvh;
-  height: 100dvh;
+  min-height: 100vh;
+  height: 100vh;
   background: var(--bg);
 }
 
 .app {
-  position: relative; /* Убрали fixed */
+  position: fixed;
+  inset: 0;
   z-index: 1;
   width: 100%;
   max-width: 480px;
@@ -128,8 +129,8 @@ input {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
-  min-height: 100dvh;
-  height: 100dvh; /* Строго высота экрана */
+  min-height: 100vh;
+  height: 100vh;
 }
 /* КОНЕЦ ИСПРАВЛЕНИЙ ДЛЯ КАРКАСА */
 
@@ -147,12 +148,9 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-
-  /* Правильный отступ: контент начинается строго ПОД Динамическим островом */
-  padding: calc(var(--safe-top, 59px) + 16px) 18px 12px;
+  padding: calc(var(--safe-top, 59px) + 16px) 18px 0px;
   background: transparent;
-
-  /* Таббар снова в flex-потоке — запас снизу под оверлей не нужен */
+  padding-bottom: calc(64px + max(34px, env(safe-area-inset-bottom, 0px)));
 }
 
 /* ----------------------------------------------------------- СТАТУС-БАР / ОСТРОВ */
@@ -161,8 +159,7 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  /* Высота плашки должна быть строго равна высоте зоны Динамического острова */
-  height: var(--safe-top, 59px);
+  height: var(--safe-top, 59px); /* Высота ровно по нижний край острова */
   z-index: 40;
   pointer-events: none;
   overflow: hidden;
@@ -175,23 +172,14 @@ input {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   transition: background 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease;
-
-  /*
-   * Мягкая маска WebKit на самом blur-эффекте.
-   * У нижней границы острова размытие слабое, к верху экрана — сильнее.
-   */
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 60%, transparent 100%);
 }
 
-/*
- * Когда страница проскроллена: матовое стекло.
- * blur 12px — буквы не превращаются в кашу.
- */
+/* Эффект матового стекла Apple с острой аккуратной нижней гранью */
 .app.is-scrolled .status-frost-inner {
-  background: color-mix(in srgb, var(--bg) 65%, transparent);
-  backdrop-filter: blur(12px) saturate(1.4);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  background: color-mix(in srgb, var(--bg) 75%, transparent);
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid var(--line);
 }
 
 .page {
@@ -835,7 +823,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(56px + max(34px, env(safe-area-inset-bottom, 0px)) + 8px);
+  bottom: calc(54px + max(34px, env(safe-area-inset-bottom, 0px)) + 8px);
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -856,17 +844,17 @@ h1.display {
 /* ------------------------------------------------------------------ ТАББАР */
 .tabbar {
   --active: 0;
-  /* env(..., 34px) не срабатывает при 0 — нужен max */
   --tab-safe-bottom: max(34px, env(safe-area-inset-bottom, 0px));
-  position: relative; /* Никаких fixed — встаёт в низ flex-каркаса */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   z-index: 10;
-  flex: 0 0 auto;
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  align-items: start;
 
-  height: calc(56px + var(--tab-safe-bottom));
+  height: calc(54px + var(--tab-safe-bottom));
   padding-top: 6px;
   padding-inline: 10px;
   padding-bottom: var(--tab-safe-bottom);
@@ -887,7 +875,7 @@ h1.display {
 
 .tab-pill {
   position: absolute;
-  top: 6px;
+  top: 11px;
   left: 10px;
   width: calc((100% - 20px) / 3);
   height: 44px;
@@ -906,6 +894,7 @@ h1.display {
   justify-content: center;
   gap: 1px;
   height: 44px;
+  margin-top: 5px;
   border: 0;
   background: transparent;
   color: var(--muted);
