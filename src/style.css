@@ -852,7 +852,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(62px + var(--safe-bottom));
+  bottom: 64px;
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -878,11 +878,10 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /*
-   * Pad for the home indicator, but keep the SAME solid fill all the way
-   * down — native iOS tab bars look continuous, not like a black gap.
-   */
-  padding: 6px 12px calc(6px + var(--safe-bottom));
+  /* Icons sit near the physical bottom. Do NOT add safe-area here —
+     that creates the huge empty band. html/body background covers the
+     home-indicator zone in the matching color. */
+  padding: 4px 12px 8px;
   background: var(--bg);
   background-color: #0b1310;
 }
@@ -895,7 +894,7 @@ h1.display {
 
 .tab-pill {
   position: absolute;
-  top: 6px;
+  top: 4px;
   left: 12px;
   width: calc((100% - 24px) / 3);
   height: 48px;
