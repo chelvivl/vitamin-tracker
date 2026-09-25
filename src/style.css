@@ -148,35 +148,28 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  /* Увеличиваем верхний отступ, чтобы контент начинался строго ПОД островом */
-  padding: calc(var(--safe-top) + 20px) 18px 0px;
+
+  /* Отодвигаем контент ниже острова: высота острова (59px) + 16px нативный зазор */
+  padding: calc(var(--safe-top, 59px) + 16px) 18px 0px;
   background: transparent;
 
-  /* Резервируем место снизу под фиксированный таббар, чтобы контент не перекрывался кнопками */
+  /* Защита снизу под таббар */
   padding-bottom: calc(64px + env(safe-area-inset-bottom, 34px));
 }
 
 /* ----------------------------------------------------------- СТАТУС-БАР / ОСТРОВ */
-/*
- * Четко ограничиваем зону размытия строго по высоте статус-бара iOS (44px).
- * overflow: hidden намертво отсекает любое размытие ниже этой линии,
- * гарантируя, что текст не будет двоиться или размываться раньше времени.
- */
 .status-frost {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 44px; /* Ровная системная высота */
+  /* Жестко задаем высоту всей верхней полосы на iPhone 15 */
+  height: var(--safe-top, 59px);
   z-index: 40;
   pointer-events: none;
-  overflow: hidden; /* Обрезает контент */
+  overflow: hidden;
 }
 
-/*
- * Внутренний контейнер, который отвечает за нативный матовый эффект iOS.
- * Полностью убираем любые маски (-webkit-mask-image), которые искажали буквы!
- */
 .status-frost-inner {
   position: absolute;
   inset: 0;
@@ -187,14 +180,14 @@ input {
 }
 
 /*
- * При скролле включается стандартный нативный эффект Apple:
- * полупрозрачный фон темы + размытие. Граница снизу идеально острая.
+ * При скролле размывается намертво ВСЯ верхняя полоса (справа и слева от острова).
+ * Больше ни один пиксель текста не просочится наверх в чистом виде.
  */
 .app.is-scrolled .status-frost-inner {
   background: color-mix(in srgb, var(--bg) 75%, transparent);
   backdrop-filter: blur(20px) saturate(1.6);
   -webkit-backdrop-filter: blur(20px) saturate(1.6);
-  border-bottom: 1px solid var(--line); /* Тонкая нативная разделительная черта, как в iOS */
+  border-bottom: 1px solid var(--line);
 }
 
 .page {

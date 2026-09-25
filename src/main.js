@@ -344,8 +344,8 @@ function mount() {
 function watchScroll() {
   const view = screen()
   if (!view) return
-  // Включаем, когда контент реально заходит под остров
-  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 12)
+  // Срабатывает мгновенно при начале движения
+  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 1)
   view.addEventListener('scroll', sync, { passive: true })
   sync()
 }
