@@ -239,6 +239,17 @@ function historyHtml() {
   `
 }
 
+function buildLabel() {
+  const built = new Date(__BUILD_TIME__)
+  if (Number.isNaN(built.getTime())) return ''
+  return new Intl.DateTimeFormat('ru-RU', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(built)
+}
+
 function moreHtml() {
   const id = todayVitamin()
   const next = otherVitamin(id)
@@ -267,6 +278,20 @@ function moreHtml() {
       <div class="card">
         <p class="card-label">Как это работает</p>
         <p class="card-text">Спирулина и хлорелла идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
+      </div>
+
+      <div class="card">
+        <p class="card-label">О приложении</p>
+        <div class="meta">
+          <div class="meta-row">
+            <span>Версия</span>
+            <strong>${__APP_VERSION__}</strong>
+          </div>
+          <div class="meta-row">
+            <span>Сборка</span>
+            <strong>${buildLabel()}</strong>
+          </div>
+        </div>
       </div>
     </section>
   `

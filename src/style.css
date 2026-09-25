@@ -664,6 +664,30 @@ h1.display {
   font-size: 0.92rem;
 }
 
+/* ------------------------------------------------------------- about rows */
+
+.meta {
+  display: grid;
+  gap: 10px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.94rem;
+}
+
+.meta-row span {
+  color: var(--muted);
+}
+
+.meta-row strong {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ------------------------------------------------------------------ pair */
 
 .pair {
