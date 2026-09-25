@@ -282,7 +282,7 @@ function guideCardHtml(id) {
         </span>
         <span class="guide-chev" aria-hidden="true"></span>
       </button>
-      <div class="guide-body" hidden>
+      <div class="guide-body">
         <p class="guide-tagline">${vit.tagline}</p>
         <p class="guide-about">${vit.about}</p>
 
@@ -572,10 +572,7 @@ function toggleGuide(id) {
   const card = root.querySelector(`[data-guide="${id}"]`)
   if (!card) return
   const open = card.classList.toggle('is-open')
-  const btn = card.querySelector('[data-guide-toggle]')
-  const body = card.querySelector('.guide-body')
-  btn?.setAttribute('aria-expanded', String(open))
-  if (body) body.hidden = !open
+  card.querySelector('[data-guide-toggle]')?.setAttribute('aria-expanded', String(open))
   haptic(6)
 }
 

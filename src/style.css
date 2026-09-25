@@ -799,10 +799,14 @@ h1.display {
 }
 
 .guide-body {
-  display: grid;
+  display: none;
   gap: 14px;
   padding: 0 16px 18px;
   border-top: 1px solid var(--line);
+}
+
+.guide.is-open .guide-body {
+  display: grid;
   animation: guide-in 0.38s var(--spring);
 }
 
