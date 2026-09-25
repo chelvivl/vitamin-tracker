@@ -88,13 +88,11 @@ html {
 html,
 body {
   margin: 0;
+  padding: 0;
+  width: 100%;
   height: 100%;
-  min-height: 100%;
-  min-height: 100dvh;
-  min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior: none;
-  /* Hard color (not only var) so iOS paints the home-indicator band. */
   background-color: #0b1310;
   background: var(--bg);
   color: var(--ink);
@@ -122,9 +120,8 @@ input {
 }
 
 #app {
+  width: 100%;
   height: 100%;
-  min-height: 100%;
-  min-height: -webkit-fill-available;
   background: var(--bg);
   background-color: #0b1310;
 }
@@ -135,19 +132,20 @@ input {
   }
 }
 
-/* Fixed full-bleed. Shift down into the home-indicator band so the tab bar
-   sits on the physical bottom — do NOT also add padding-bottom (that recreates
-   the empty strip under the icons). */
+/*
+ * Shell is sized in JS from visualViewport so it matches the pixels the user
+ * actually sees — no safe-area math on the bottom edge.
+ */
 .app {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: calc(0px - env(safe-area-inset-bottom, 0px));
   left: 0;
-  display: grid;
-  grid-template-rows: 1fr auto;
+  right: 0;
+  top: 0;
+  width: 100%;
   max-width: 480px;
   margin-inline: auto;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   background: var(--bg);
   background-color: #0b1310;
@@ -160,20 +158,19 @@ input {
 }
 
 .app-onboard {
-  grid-template-rows: 1fr;
+  display: flex;
+  flex-direction: column;
 }
 
-/*
- * Scroller starts at y=0 so content can pass under the status bar while
- * scrolling. Resting content stays BELOW the red line (safe-top).
- */
 .screen {
   position: relative;
   z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 12px) 18px 14px;
+  padding: calc(var(--safe-top) + 12px) 18px 12px;
   background: transparent;
 }
 
@@ -356,14 +353,9 @@ h1.display {
 
 /* -------------------------------------------------------------- hero card */
 
-/* Fill the screen so short content does not leave a void above the tab bar. */
 .page.today {
-  min-height: 100%;
-  grid-template-rows: auto auto 1fr auto;
-}
-
-.today .hero {
-  align-self: center;
+  display: grid;
+  gap: 16px;
 }
 
 .hero {
@@ -854,7 +846,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 64px;
+  bottom: 56px;
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -878,9 +870,10 @@ h1.display {
   --active: 0;
   position: relative;
   z-index: 10;
+  flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 8px 12px 4px;
+  padding: 6px 8px 6px;
   background: var(--bg);
   background-color: #0b1310;
 }
@@ -894,9 +887,9 @@ h1.display {
 .tab-pill {
   position: absolute;
   top: 6px;
-  left: 12px;
-  width: calc((100% - 24px) / 3);
-  height: 48px;
+  left: 8px;
+  width: calc((100% - 16px) / 3);
+  height: 44px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 11%, transparent);
   transform: translateX(calc(var(--active) * 100%));
@@ -910,7 +903,7 @@ h1.display {
   justify-items: center;
   align-content: center;
   gap: 2px;
-  height: 48px;
+  height: 44px;
   border: 0;
   background: transparent;
   color: var(--muted);
