@@ -858,7 +858,7 @@ h1.display {
 /* ------------------------------------------------------------------ ТАББАР */
 .tabbar {
   --active: 0;
-  /* Если iOS отдаёт 0, всё равно держим минимум под home indicator (iPhone 15 ≈ 34px) */
+  /* env(..., 34px) не срабатывает при значении 0 — нужен max */
   --tab-safe-bottom: max(34px, env(safe-area-inset-bottom, 0px));
   position: fixed;
   bottom: 0;
@@ -868,10 +868,17 @@ h1.display {
 
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  align-items: start;
 
-  /* Высоту не фиксируем: padding сам поднимает кнопки над полосой */
-  padding: 6px 10px var(--tab-safe-bottom);
+  /*
+   * Жестко фиксируем общую высоту: 60px под нажимную зону кнопок
+   * + нативный безопасный отступ iPhone 15 (минимум 34px)
+   */
+  height: calc(60px + var(--tab-safe-bottom));
+
+  /* Кнопки прижимаются к верхней части таббара, оставляя низ под Home Indicator */
+  padding-top: 0;
+  padding-inline: 10px;
+  padding-bottom: var(--tab-safe-bottom);
 
   background: var(--card);
   background-color: #16211c;
@@ -887,18 +894,22 @@ h1.display {
   }
 }
 
+/*
+ * Зеленый овал фокуса: 46px, центрируется в 60px рабочей зоне кнопок
+ */
 .tab-pill {
   position: absolute;
-  top: 11px;
+  top: 7px;
   left: 10px;
   width: calc((100% - 20px) / 3);
-  height: 44px;
+  height: 46px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 14%, transparent);
   transform: translateX(calc(var(--active) * 100%));
   transition: transform 0.42s var(--spring), background 0.3s ease;
 }
 
+/* Каждая кнопка занимает ровно 60px и центрирует иконку и текст */
 .tab {
   position: relative;
   z-index: 1;
@@ -906,9 +917,8 @@ h1.display {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  height: 44px;
-  margin-top: 5px;
+  gap: 2px;
+  height: 60px;
   border: 0;
   background: transparent;
   color: var(--muted);
@@ -925,8 +935,8 @@ h1.display {
 }
 
 .tab .ico {
-  width: 21px;
-  height: 21px;
+  width: 22px;
+  height: 22px;
 }
 
 .tab-label {
