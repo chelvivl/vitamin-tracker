@@ -239,6 +239,22 @@ function historyHtml() {
   `
 }
 
+/** Real device insets and viewport, to debug layout gaps on the phone. */
+function metricsLabel() {
+  const probe = document.createElement('div')
+  probe.style.cssText =
+    'position:fixed;top:0;left:0;width:0;height:0;visibility:hidden;' +
+    'padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);'
+  document.body.append(probe)
+  const styles = getComputedStyle(probe)
+  const top = Math.round(parseFloat(styles.paddingTop) || 0)
+  const bottom = Math.round(parseFloat(styles.paddingBottom) || 0)
+  probe.remove()
+
+  const shellHeight = Math.round(shell()?.getBoundingClientRect().height || 0)
+  return `${top} / ${bottom} · ${shellHeight} из ${Math.round(window.innerHeight)}`
+}
+
 function buildLabel() {
   const built = new Date(__BUILD_TIME__)
   if (Number.isNaN(built.getTime())) return ''
@@ -290,6 +306,10 @@ function moreHtml() {
           <div class="meta-row">
             <span>Сборка</span>
             <strong>${buildLabel()}</strong>
+          </div>
+          <div class="meta-row">
+            <span>Safe area · высота</span>
+            <strong>${metricsLabel()}</strong>
           </div>
         </div>
       </div>
