@@ -510,6 +510,35 @@ root.addEventListener('submit', (event) => {
   addEntry(event.target)
 })
 
+/*
+ * An installed PWA keeps running the build it was launched with, so a deploy
+ * stays invisible until the page navigates again. Reload as soon as a newer
+ * service worker takes over, and look for one every time the app is reopened.
+ */
+function watchForUpdates() {
+  if (!('serviceWorker' in navigator)) return
+
+  const hadController = Boolean(navigator.serviceWorker.controller)
+  let reloading = false
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || reloading) return
+    reloading = true
+    window.location.reload()
+  })
+
+  const check = () =>
+    navigator.serviceWorker
+      .getRegistration()
+      .then((registration) => registration?.update())
+      .catch(() => {})
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) check()
+  })
+  check()
+}
+
 // Block rubber-banding outside the scrollable screen, keep native scroll inside.
 document.addEventListener(
   'touchmove',
@@ -520,6 +549,7 @@ document.addEventListener(
 )
 
 mount()
+watchForUpdates()
 
 setInterval(() => {
   const key = dayKey()
