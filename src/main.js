@@ -337,17 +337,7 @@ function mount() {
       </nav>
     </div>
   `
-  watchScroll()
-}
-
-/** Frost only the status-bar strip while content is scrolled underneath. */
-function watchScroll() {
-  const view = screen()
-  if (!view) return
-  // Срабатывает мгновенно при начале движения
-  const sync = () => shell()?.classList.toggle('is-scrolled', view.scrollTop > 1)
-  view.addEventListener('scroll', sync, { passive: true })
-  sync()
+  // watchScroll отключён: растворение текста делает CSS-маска на .screen
 }
 
 function switchTab(tab) {
@@ -362,7 +352,6 @@ function switchTab(tab) {
   const view = screen()
   view.innerHTML = screenHtml(tab)
   view.scrollTop = 0
-  shell()?.classList.remove('is-scrolled')
   slideIn(view.firstElementChild, direction)
 
   const bar = root.querySelector('.tabbar')
