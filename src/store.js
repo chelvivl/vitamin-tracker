@@ -13,7 +13,7 @@ export function loadState() {
     const raw = JSON.parse(localStorage.getItem(KEY) || 'null')
     if (!raw || typeof raw !== 'object') return defaultState()
     return {
-      settings: raw.settings ?? null,
+      settings: normalizeSettings(raw.settings ?? null),
       log: raw.log && typeof raw.log === 'object' ? raw.log : {},
       tab: raw.tab || 'today',
     }
@@ -33,10 +33,22 @@ export function saveState(state) {
   )
 }
 
+export function normalizeSettings(settings) {
+  if (!settings || typeof settings !== 'object') return null
+  return {
+    anchorDayKey: settings.anchorDayKey,
+    anchorVitamin: settings.anchorVitamin,
+    remindAt: typeof settings.remindAt === 'string' ? settings.remindAt : '10:00',
+    remindersEnabled: Boolean(settings.remindersEnabled),
+  }
+}
+
 export function bootstrapSettings(vitaminId) {
   return {
     anchorDayKey: dayKey(),
     anchorVitamin: vitaminId,
+    remindAt: '10:00',
+    remindersEnabled: false,
   }
 }
 

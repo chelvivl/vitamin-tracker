@@ -21,6 +21,12 @@ import {
   weekStrip,
 } from './store.js'
 import {
+  ensureReminderPermission,
+  initReminders,
+  reminderSupported,
+  syncReminders,
+} from './reminders.js'
+import {
   animateRowIn,
   animateRowOut,
   celebrate,
@@ -44,7 +50,10 @@ let draftVitamin = 'spirulina'
 let paintedDay = dayKey()
 
 const todayVitamin = () => plannedVitamin(new Date(), state.settings)
-const persist = () => saveState(state)
+const persist = () => {
+  saveState(state)
+  syncReminders()
+}
 function shell() {
   return root.querySelector('.app')
 }
@@ -297,6 +306,28 @@ function moreHtml() {
       </div>
 
       <div class="card">
+        <p class="card-label">Напоминания</p>
+        <p class="card-text">Каждый день в выбранное время: «Не забудь сегодня принять витамин» и название на сегодня.</p>
+        <label class="toggle-row">
+          <span>Ежедневное напоминание</span>
+          <input class="toggle" type="checkbox" data-remind-enabled
+                 ${state.settings?.remindersEnabled ? 'checked' : ''}
+                 ${reminderSupported() ? '' : 'disabled'} />
+        </label>
+        <div class="field remind-time-field">
+          <label class="field-label" for="remind-at">Время</label>
+          <input class="input" id="remind-at" type="time" data-remind-at
+                 value="${state.settings?.remindAt || '10:00'}"
+                 ${state.settings?.remindersEnabled ? '' : 'disabled'} />
+        </div>
+        ${
+          reminderSupported()
+            ? ''
+            : '<p class="note">Уведомления в этом браузере недоступны.</p>'
+        }
+      </div>
+
+      <div class="card">
         <p class="card-label">Как это работает</p>
         <p class="card-text">Спирулина — овальная таблетка, хлорелла — круглая. Идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
       </div>
@@ -538,6 +569,48 @@ root.addEventListener('click', (event) => {
   if (remove) return removeEntry(remove.dataset.remove)
 })
 
+root.addEventListener('change', async (event) => {
+  const target = event.target
+  if (!(target instanceof HTMLInputElement) || !state.settings) return
+
+  if (target.matches('[data-remind-enabled]')) {
+    if (target.checked) {
+      const ok = await ensureReminderPermission()
+      if (!ok) {
+        target.checked = false
+        notify('Разрешите уведомления в настройках iPhone')
+        return
+      }
+      state = {
+        ...state,
+        settings: { ...state.settings, remindersEnabled: true },
+      }
+      persist()
+      haptic()
+      notify('Напоминания включены')
+    } else {
+      state = {
+        ...state,
+        settings: { ...state.settings, remindersEnabled: false },
+      }
+      persist()
+    }
+    const time = root.querySelector('[data-remind-at]')
+    if (time) time.disabled = !target.checked
+    return
+  }
+
+  if (target.matches('[data-remind-at]')) {
+    const value = target.value || '10:00'
+    state = {
+      ...state,
+      settings: { ...state.settings, remindAt: value },
+    }
+    persist()
+    notify(`Напоминание в ${value}`)
+  }
+})
+
 root.addEventListener('submit', (event) => {
   if (!event.target.matches('[data-form="add"]')) return
   event.preventDefault()
@@ -584,6 +657,7 @@ document.addEventListener(
 
 mount()
 watchForUpdates()
+initReminders(() => ({ settings: state.settings, log: state.log }))
 
 const paintRoot = () => {
   const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1310'

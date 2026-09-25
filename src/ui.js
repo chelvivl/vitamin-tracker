@@ -29,24 +29,24 @@ export function animateRowIn(row) {
   })
 }
 
-/** Collapse-out, then hand control back to the caller. */
+/** Soft fade-out without height animation — avoids iOS layout freeze on list updates. */
 export function animateRowOut(row) {
+  if (!row) return Promise.resolve()
   if (reduceMotion) {
     row.remove()
     return Promise.resolve()
   }
-  const height = row.offsetHeight
-  const { marginBottom } = getComputedStyle(row)
-  row.style.overflow = 'hidden'
   row.style.pointerEvents = 'none'
   const anim = row.animate(
     [
-      { height: `${height}px`, marginBottom, opacity: 1, transform: 'none' },
-      { height: '0px', marginBottom: '0px', opacity: 0, transform: 'translateX(14px)' },
+      { opacity: 1, transform: 'none' },
+      { opacity: 0, transform: 'translateX(12px) scale(0.98)' },
     ],
-    { duration: 300, easing: EXIT, fill: 'forwards' },
+    { duration: 200, easing: EXIT, fill: 'forwards' },
   )
-  return anim.finished.then(() => row.remove())
+  return Promise.race([anim.finished.catch(() => {}), new Promise((r) => setTimeout(r, 240))]).then(() => {
+    row.remove()
+  })
 }
 
 export function pulse(el) {
