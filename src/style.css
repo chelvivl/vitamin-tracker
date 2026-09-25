@@ -162,11 +162,26 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  /* Высота ровно до нижней границы Динамического острова */
-  height: 44px;
+  /* Зона острова + мягкий хвост, чтобы blur не обрывался прямоугольником */
+  height: calc(env(safe-area-inset-top, 59px) + 28px);
   z-index: 40;
   pointer-events: none;
   overflow: hidden;
+  /* Маска гасит нижний край backdrop-filter — иначе виден грязный стык */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 72%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 42%,
+    rgba(0, 0, 0, 0.55) 72%,
+    transparent 100%
+  );
 }
 
 .status-frost-inner {
@@ -175,22 +190,22 @@ input {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  /* Мягкий переход, чтобы размытие не включалось рывком */
-  transition: background 0.3s ease, backdrop-filter 0.3s ease, -webkit-backdrop-filter 0.3s ease;
+  transition:
+    background 0.35s ease,
+    backdrop-filter 0.35s ease,
+    -webkit-backdrop-filter 0.35s ease;
 }
 
-/*
- * Мягче blur (12px) + градиент, чтобы текст растворялся у нижней границы острова.
- */
 .app.is-scrolled .status-frost-inner {
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--bg) 85%, transparent) 0%,
-    color-mix(in srgb, var(--bg) 40%, transparent) 70%,
+    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 45%, transparent) 48%,
+    color-mix(in srgb, var(--bg) 12%, transparent) 78%,
     transparent 100%
   );
-  backdrop-filter: blur(12px) saturate(1.4);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
 }
 
 .page {
