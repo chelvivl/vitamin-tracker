@@ -252,7 +252,7 @@ function metricsLabel() {
   probe.remove()
 
   const shellHeight = Math.round(shell()?.getBoundingClientRect().height || 0)
-  return `${top} / ${bottom} · ${shellHeight} из ${Math.round(window.innerHeight)}`
+  return `верх ${top} · низ ${bottom} · ${shellHeight}px`
 }
 
 function buildLabel() {

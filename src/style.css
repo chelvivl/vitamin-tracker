@@ -27,10 +27,6 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  /* iOS standalone can report a far larger bottom inset than the home
-     indicator needs, which leaves a dead band under the tab bar. */
-  --pad-top: min(var(--safe-top), 62px);
-  --pad-bottom: min(var(--safe-bottom), 22px);
 
   --ui: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --display: 'Fraunces', Georgia, 'Times New Roman', serif;
@@ -82,6 +78,9 @@ html,
 body {
   margin: 0;
   height: 100%;
+  min-height: 100%;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   overflow: hidden;
   overscroll-behavior: none;
   background: var(--bg);
@@ -104,21 +103,24 @@ input {
 
 #app {
   height: 100%;
+  min-height: 100%;
+  min-height: -webkit-fill-available;
+  background: var(--bg);
 }
 
 /* Fixed to the viewport so standalone mode has no leftover strip anywhere. */
 .app {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
   display: grid;
   grid-template-rows: 1fr auto;
   max-width: 480px;
   margin-inline: auto;
   overflow: hidden;
-  background:
-    radial-gradient(1100px 900px at 85% 20%, color-mix(in srgb, var(--tint) 16%, transparent), transparent 85%),
-    var(--bg);
-  transition: background 0.7s var(--spring);
+  background: var(--bg);
 }
 
 .app-onboard {
@@ -126,8 +128,8 @@ input {
 }
 
 /*
- * The scroller starts at y=0, so content passes through the status bar row
- * while scrolling. At rest the padding keeps it clear of the clock and island.
+ * Scroller starts at y=0 (content can pass through the status-bar row while
+ * scrolling). Padding keeps resting content clear of the clock / island.
  */
 .screen {
   position: relative;
@@ -135,34 +137,14 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--pad-top) + 8px) 18px 14px;
+  padding: calc(var(--safe-top) + 8px) 18px 14px;
+  background: transparent;
 }
 
 .page {
   display: grid;
   align-content: start;
   gap: 16px;
-}
-
-.page > * {
-  animation: rise 0.44s var(--spring) both;
-}
-
-.page > *:nth-child(2) {
-  animation-delay: 0.05s;
-}
-.page > *:nth-child(3) {
-  animation-delay: 0.1s;
-}
-.page > *:nth-child(4) {
-  animation-delay: 0.14s;
-}
-
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
 }
 
 /* --------------------------------------------------------------- typography */
@@ -709,7 +691,7 @@ h1.display {
   position: relative;
   align-content: center;
   min-height: 100%;
-  padding: calc(24px + var(--pad-top)) 20px calc(28px + var(--pad-bottom));
+  padding: calc(24px + var(--safe-top)) 20px calc(28px + var(--safe-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -801,7 +783,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(74px + var(--pad-bottom));
+  bottom: calc(74px + var(--safe-bottom));
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -827,13 +809,16 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 6px 12px calc(6px + var(--pad-bottom));
-  background: transparent;
+  /* Background fills to the physical bottom edge (home indicator sits on it).
+     Icons stay above via padding — same pattern as native iOS tab bars. */
+  padding: 8px 12px max(8px, var(--safe-bottom));
+  background: var(--bg);
+  border-top: 1px solid var(--line);
 }
 
 .tab-pill {
   position: absolute;
-  top: 6px;
+  top: 8px;
   left: 12px;
   width: calc((100% - 24px) / 3);
   height: 52px;
