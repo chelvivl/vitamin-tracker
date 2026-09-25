@@ -3,14 +3,14 @@ export const VITAMINS = {
     id: 'spirulina',
     name: 'Спирулина',
     short: 'С',
-    hint: 'сине-зелёная',
+    hint: 'овальная таблетка',
     emoji: '🌀',
   },
   chlorella: {
     id: 'chlorella',
     name: 'Хлорелла',
     short: 'Х',
-    hint: 'зелёная',
+    hint: 'круглая таблетка',
     emoji: '🌿',
   },
 }

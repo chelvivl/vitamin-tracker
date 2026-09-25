@@ -67,26 +67,39 @@ const icon = (name, cls = '') =>
   `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">${ICONS[name]}</svg>`
 
 function algaeMark(id) {
+  const gid = `mark-${id}-${Math.random().toString(36).slice(2, 8)}`
   if (id === 'spirulina') {
-    return `<svg class="mark" viewBox="0 0 96 96" aria-hidden="true">
-      <defs><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1">
-        <stop stop-color="#7FE6D6"/><stop offset="1" stop-color="#0D6F66"/>
-      </linearGradient></defs>
-      <circle cx="48" cy="48" r="34" fill="url(#gs)" opacity=".16"/>
-      <path d="M28 62C36 38 54 26 70 26c-12 11-18 24-16 40-11-1-21-2-26-4Z" fill="url(#gs)"/>
-      <path d="M36 42c8 3 12 11 11 20" fill="none" stroke="#DFFBF5" stroke-width="3.4" stroke-linecap="round" opacity=".75"/>
+    // Овальная капсула / таблетка
+    return `<svg class="mark mark-oval" viewBox="0 0 96 96" aria-hidden="true">
+      <defs>
+        <linearGradient id="${gid}" x1="0" y1="0" x2="1" y2="1">
+          <stop stop-color="#7FE6D6"/><stop offset="1" stop-color="#0D6F66"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="48" cy="48" rx="38" ry="24" fill="url(#${gid})" opacity=".18"/>
+      <ellipse cx="48" cy="48" rx="34" ry="20" fill="url(#${gid})"/>
+      <ellipse cx="48" cy="42" rx="26" ry="8" fill="#E8FFFB" opacity=".28"/>
+      <path d="M48 28.5v39" stroke="#DFFBF5" stroke-width="2.2" stroke-linecap="round" opacity=".45"/>
     </svg>`
   }
-  return `<svg class="mark" viewBox="0 0 96 96" aria-hidden="true">
-    <defs><linearGradient id="gc" x1="0" y1="1" x2="1" y2="0">
-      <stop stop-color="#9BE49B"/><stop offset="1" stop-color="#256B30"/>
-    </linearGradient></defs>
-    <circle cx="48" cy="48" r="34" fill="url(#gc)" opacity=".15"/>
-    <circle cx="48" cy="49" r="19" fill="url(#gc)"/>
-    <circle cx="48" cy="49" r="7" fill="#EAFBEA" opacity=".9"/>
-    <circle cx="32" cy="33" r="6" fill="url(#gc)" opacity=".65"/>
-    <circle cx="65" cy="35" r="4.6" fill="url(#gc)" opacity=".5"/>
+  // Круглая таблетка
+  return `<svg class="mark mark-round" viewBox="0 0 96 96" aria-hidden="true">
+    <defs>
+      <linearGradient id="${gid}" x1="0" y1="1" x2="1" y2="0">
+        <stop stop-color="#9BE49B"/><stop offset="1" stop-color="#256B30"/>
+      </linearGradient>
+    </defs>
+    <circle cx="48" cy="48" r="34" fill="url(#${gid})" opacity=".16"/>
+    <circle cx="48" cy="48" r="26" fill="url(#${gid})"/>
+    <circle cx="40" cy="40" r="10" fill="#EAFBEA" opacity=".35"/>
+    <path d="M30 48h36" stroke="#EAFBEA" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
   </svg>`
+}
+
+function tabletBadge(id) {
+  const vit = VITAMINS[id]
+  const shape = id === 'spirulina' ? 'is-oval' : 'is-round'
+  return `<span class="tablet-badge ${shape}" data-vitamin="${id}" aria-hidden="true" title="${vit?.name || ''}"></span>`
 }
 
 /* ------------------------------------------------------------ templates */
@@ -143,7 +156,7 @@ function todayHtml() {
                data-vitamin="${d.vitamin || ''}" data-key="${d.key}" role="listitem">
             <span class="wk-d">${weekdayShort(d.date)}</span>
             <span class="wk-n">${d.date.getDate()}</span>
-            <span class="wk-m">${d.vitamin ? VITAMINS[d.vitamin].short : '·'}</span>
+            <span class="wk-m">${d.vitamin ? tabletBadge(d.vitamin) : '·'}</span>
           </div>`,
           )
           .join('')}
@@ -170,7 +183,7 @@ function logRowHtml(entry) {
   const isToday = entry.key === dayKey()
   return `
     <li class="log-row" data-row="${entry.key}" data-vitamin="${entry.vitamin}">
-      <span class="log-badge" aria-hidden="true">${vit?.short || '·'}</span>
+      <span class="log-badge" aria-hidden="true">${tabletBadge(entry.vitamin)}</span>
       <span class="log-text">
         <strong>${formatShortDate(entry.date)}</strong>
         <span>${weekdayShort(entry.date)}${isToday ? ' · сегодня' : ''}</span>
@@ -222,7 +235,8 @@ function historyHtml() {
               (id) => `
               <button class="seg-btn ${id === draftVitamin ? 'is-active' : ''}" type="button"
                       data-draft="${id}" aria-pressed="${id === draftVitamin}">
-                ${VITAMINS[id].name}
+                ${tabletBadge(id)}
+                <span>${VITAMINS[id].name}</span>
               </button>`,
             ).join('')}
           </div>
@@ -271,10 +285,12 @@ function moreHtml() {
         <p class="card-label">Расписание</p>
         <div class="pair" data-pair>
           <div class="pair-item" data-vitamin="${id}">
-            <span>Сегодня</span><strong>${VITAMINS[id].name}</strong>
+            <span>Сегодня</span>
+            <strong>${tabletBadge(id)}${VITAMINS[id].name}</strong>
           </div>
           <div class="pair-item" data-vitamin="${next}">
-            <span>Завтра</span><strong>${VITAMINS[next].name}</strong>
+            <span>Завтра</span>
+            <strong>${tabletBadge(next)}${VITAMINS[next].name}</strong>
           </div>
         </div>
         <button class="btn btn-soft" type="button" data-action="swap">Поменять местами</button>
@@ -282,7 +298,7 @@ function moreHtml() {
 
       <div class="card">
         <p class="card-label">Как это работает</p>
-        <p class="card-text">Спирулина и хлорелла идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
+        <p class="card-text">Спирулина — овальная таблетка, хлорелла — круглая. Идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
       </div>
 
       <div class="card">
@@ -490,8 +506,8 @@ function swapSchedule() {
   const pair = root.querySelector('[data-pair]')
   const next = otherVitamin(id)
   pair.innerHTML = `
-    <div class="pair-item" data-vitamin="${id}"><span>Сегодня</span><strong>${VITAMINS[id].name}</strong></div>
-    <div class="pair-item" data-vitamin="${next}"><span>Завтра</span><strong>${VITAMINS[next].name}</strong></div>
+    <div class="pair-item" data-vitamin="${id}"><span>Сегодня</span><strong>${tabletBadge(id)}${VITAMINS[id].name}</strong></div>
+    <div class="pair-item" data-vitamin="${next}"><span>Завтра</span><strong>${tabletBadge(next)}${VITAMINS[next].name}</strong></div>
   `
   crossfade(pair)
 }

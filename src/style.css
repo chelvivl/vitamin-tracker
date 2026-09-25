@@ -313,19 +313,23 @@ h1.display {
 .wk-m {
   display: grid;
   place-items: center;
-  width: 19px;
-  height: 19px;
-  border-radius: 50%;
-  font-size: 0.6rem;
-  font-weight: 700;
-  color: var(--brand);
-  background: color-mix(in srgb, var(--brand) 12%, transparent);
-  transition: background 0.3s ease, color 0.3s ease;
+  min-width: 22px;
+  height: 16px;
 }
 
-.wk.is-taken .wk-m {
+.wk-m .tablet-badge {
+  width: 18px;
+  height: 10px;
+  background: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+
+.wk-m .tablet-badge.is-round {
+  width: 12px;
+  height: 12px;
+}
+
+.wk.is-taken .wk-m .tablet-badge {
   background: var(--brand);
-  color: #fff;
 }
 
 /* -------------------------------------------------------------- hero card */
@@ -372,6 +376,23 @@ h1.display {
   width: 100%;
   height: 100%;
   display: block;
+}
+
+/* Мини-таблетки: овал = спирулина, круг = хлорелла */
+.tablet-badge {
+  display: inline-block;
+  width: 24px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--brand, currentColor);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  vertical-align: middle;
+}
+
+.tablet-badge.is-round {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
 }
 
 @keyframes float {
@@ -542,6 +563,10 @@ h1.display {
 .seg-btn {
   position: relative;
   z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 46px;
   border: 0;
   background: transparent;
@@ -551,6 +576,17 @@ h1.display {
   color: var(--muted);
   cursor: pointer;
   transition: color 0.25s ease;
+}
+
+.seg-btn .tablet-badge {
+  width: 22px;
+  height: 12px;
+  background: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.seg-btn .tablet-badge.is-round {
+  width: 14px;
+  height: 14px;
 }
 
 .seg-btn.is-active {
@@ -585,13 +621,21 @@ h1.display {
 .log-badge {
   display: grid;
   place-items: center;
-  width: 36px;
+  width: 40px;
   height: 36px;
   border-radius: 12px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--brand);
   background: color-mix(in srgb, var(--brand) 13%, transparent);
+}
+
+.log-badge .tablet-badge {
+  width: 26px;
+  height: 14px;
+  background: var(--brand);
+}
+
+.log-badge .tablet-badge.is-round {
+  width: 18px;
+  height: 18px;
 }
 
 .log-text {
@@ -717,11 +761,26 @@ h1.display {
 }
 
 .pair-item strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--display);
   font-size: 1.12rem;
   font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--brand);
+}
+
+.pair-item .tablet-badge {
+  width: 22px;
+  height: 12px;
+  background: var(--brand);
+  flex: 0 0 auto;
+}
+
+.pair-item .tablet-badge.is-round {
+  width: 14px;
+  height: 14px;
 }
 
 /* ------------------------------------------------------------- onboarding */
