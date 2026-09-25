@@ -9,16 +9,19 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Vitamin Tracker',
+        name: 'Витамины',
         short_name: 'Витамины',
         description: 'Трекер приёма витаминов',
-        theme_color: '#2f6b4f',
-        background_color: '#f4f7f4',
+        theme_color: '#F2F4F2',
+        background_color: '#F2F4F2',
         display: 'standalone',
+        display_override: ['standalone', 'fullscreen'],
         orientation: 'portrait',
         lang: 'ru',
         start_url: '/vitamin-tracker/',
         scope: '/vitamin-tracker/',
+        categories: ['health', 'lifestyle'],
+        prefer_related_applications: false,
         icons: [
           {
             src: 'pwa-192x192.png',
