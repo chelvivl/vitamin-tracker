@@ -21,9 +21,13 @@ import {
   weekStrip,
 } from './store.js'
 import {
+  armReminderForToday,
   ensureReminderPermission,
   initReminders,
+  nextReminderLabel,
+  reminderPermission,
   reminderSupported,
+  sendTestReminder,
   syncReminders,
 } from './reminders.js'
 import {
@@ -307,7 +311,7 @@ function moreHtml() {
 
       <div class="card">
         <p class="card-label">Напоминания</p>
-        <p class="card-text">Каждый день в выбранное время: «Не забудь сегодня принять витамин» и название на сегодня.</p>
+        <p class="card-text">Один раз в день в выбранное время. Пока приложение закрыто или усыплено iPhone, таймер может не сработать — открой приложение около этого времени или оставь его в фоне.</p>
         <label class="toggle-row">
           <span>Ежедневное напоминание</span>
           <input class="toggle" type="checkbox" data-remind-enabled
@@ -321,8 +325,19 @@ function moreHtml() {
                  ${state.settings?.remindersEnabled ? '' : 'disabled'} />
         </div>
         ${
+          state.settings?.remindersEnabled && reminderPermission() === 'granted'
+            ? `<p class="note" data-remind-next>Следующее: ${nextReminderLabel(state.settings) || '—'}</p>`
+            : ''
+        }
+        <button class="btn btn-soft" type="button" data-action="remind-test"
+                ${reminderSupported() ? '' : 'disabled'}>
+          Проверить уведомление
+        </button>
+        ${
           reminderSupported()
-            ? ''
+            ? reminderPermission() === 'denied'
+              ? '<p class="note">Уведомления запрещены — разрешите их в Настройки → Водоросли.</p>'
+              : ''
             : '<p class="note">Уведомления в этом браузере недоступны.</p>'
         }
       </div>
@@ -561,6 +576,7 @@ root.addEventListener('click', (event) => {
 
   if (hit('[data-action="take"]')) return takeToday()
   if (hit('[data-action="swap"]')) return swapSchedule()
+  if (hit('[data-action="remind-test"]')) return testReminder()
 
   const draft = hit('[data-draft]')
   if (draft) return selectDraft(draft.dataset.draft)
@@ -568,6 +584,20 @@ root.addEventListener('click', (event) => {
   const remove = hit('[data-remove]')
   if (remove) return removeEntry(remove.dataset.remove)
 })
+
+async function testReminder() {
+  const result = await sendTestReminder()
+  if (result.ok) {
+    haptic()
+    notify('Тестовое уведомление отправлено')
+    return
+  }
+  if (result.reason === 'permission') {
+    notify('Разрешите уведомления в настройках iPhone')
+    return
+  }
+  notify('Не удалось показать уведомление')
+}
 
 root.addEventListener('change', async (event) => {
   const target = event.target
@@ -602,12 +632,16 @@ root.addEventListener('change', async (event) => {
 
   if (target.matches('[data-remind-at]')) {
     const value = target.value || '10:00'
+    armReminderForToday(value)
     state = {
       ...state,
       settings: { ...state.settings, remindAt: value },
     }
     persist()
-    notify(`Напоминание в ${value}`)
+    const next = nextReminderLabel(state.settings)
+    notify(next ? `Ждём ${next}` : `Напоминание в ${value}`)
+    const label = root.querySelector('[data-remind-next]')
+    if (label) label.textContent = `Следующее: ${next || '—'}`
   }
 })
 
