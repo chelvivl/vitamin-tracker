@@ -121,6 +121,20 @@ export function formatShortDate(date) {
   }).format(date)
 }
 
+export function formatTime(date) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date)
+}
+
+/** Время отметки из ISO; null если нет. */
+export function takenAt(iso) {
+  if (!iso) return null
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 export function weekdayShort(date) {
   return new Intl.DateTimeFormat('ru-RU', { weekday: 'short' }).format(date)
 }

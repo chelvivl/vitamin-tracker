@@ -6,9 +6,11 @@ import {
   dayKey,
   formatLongDate,
   formatShortDate,
+  formatTime,
   otherVitamin,
   parseDayKey,
   plannedVitamin,
+  takenAt,
   weekdayShort,
 } from './lib.js'
 import {
@@ -133,7 +135,10 @@ function onboardingHtml() {
 function todayHtml() {
   const now = new Date()
   const id = todayVitamin()
-  const taken = Boolean(state.log[dayKey(now)]?.taken)
+  const key = dayKey(now)
+  const entry = state.log[key]
+  const taken = Boolean(entry?.taken)
+  const at = takenAt(entry?.at)
   const streak = streakCount(state)
 
   return `
@@ -167,7 +172,11 @@ function todayHtml() {
         <div class="hero-mark">${algaeMark(id)}</div>
         <p class="hero-kicker" data-kicker>${taken ? 'Принято' : 'На сегодня'}</p>
         <h2 class="hero-title display">${VITAMINS[id].name}</h2>
-        <p class="hero-next">Завтра — ${VITAMINS[otherVitamin(id)].name}</p>
+        <p class="hero-next" data-hero-meta>${
+          taken && at
+            ? `Отмечено в ${formatTime(at)}`
+            : `Завтра — ${VITAMINS[otherVitamin(id)].name}`
+        }</p>
         <button class="btn ${taken ? 'btn-soft' : 'btn-primary'}" type="button"
                 data-action="take" aria-pressed="${taken}">
           <span data-cta-label>${taken ? 'Отменить отметку' : 'Отметить приём'}</span>
@@ -182,12 +191,22 @@ function todayHtml() {
 function logRowHtml(entry) {
   const vit = VITAMINS[entry.vitamin]
   const isToday = entry.key === dayKey()
+  const at = takenAt(entry.at)
+  const timeLabel = at ? formatTime(at) : null
+  const sub = [
+    weekdayShort(entry.date),
+    isToday ? 'сегодня' : null,
+    timeLabel,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
   return `
     <li class="log-row" data-row="${entry.key}" data-vitamin="${entry.vitamin}">
       <span class="log-badge" aria-hidden="true">${tabletBadge(entry.vitamin)}</span>
       <span class="log-text">
         <strong>${formatShortDate(entry.date)}</strong>
-        <span>${weekdayShort(entry.date)}${isToday ? ' · сегодня' : ''}</span>
+        <span>${sub}</span>
       </span>
       <span class="log-vit">${vit?.name || '—'}</span>
       <button class="log-del" type="button" data-remove="${entry.key}" aria-label="Удалить запись">
@@ -465,6 +484,15 @@ function takeToday() {
   hero.classList.toggle('is-taken', taken)
   hero.querySelector('[data-kicker]').textContent = taken ? 'Принято' : 'На сегодня'
 
+  const meta = hero.querySelector('[data-hero-meta]')
+  if (meta) {
+    const at = takenAt(state.log[key]?.at)
+    meta.textContent =
+      taken && at
+        ? `Отмечено в ${formatTime(at)}`
+        : `Завтра — ${VITAMINS[otherVitamin(todayVitamin())].name}`
+  }
+
   const cta = root.querySelector('[data-action="take"]')
   cta.classList.toggle('btn-primary', !taken)
   cta.classList.toggle('btn-soft', taken)
@@ -509,7 +537,12 @@ function addEntry(form) {
   haptic()
 
   const host = root.querySelector('[data-log]')
-  const entry = { key, date: parseDayKey(key), vitamin: draftVitamin }
+  const entry = {
+    key,
+    date: parseDayKey(key),
+    vitamin: draftVitamin,
+    at: state.log[key]?.at || null,
+  }
 
   if (existed) {
     const row = host.querySelector(`[data-row="${key}"]`)
