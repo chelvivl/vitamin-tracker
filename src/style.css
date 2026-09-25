@@ -123,6 +123,19 @@ input {
   background: var(--bg);
 }
 
+/* Paint the home-indicator band explicitly so iOS never shows a black gap. */
+.app::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--safe-bottom);
+  background: var(--bg);
+  pointer-events: none;
+  z-index: 9;
+}
+
 .app-onboard {
   grid-template-rows: 1fr;
 }
@@ -818,7 +831,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: calc(74px + var(--safe-bottom));
+  bottom: 64px;
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -844,19 +857,22 @@ h1.display {
   z-index: 10;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /* Background fills to the physical bottom edge (home indicator sits on it).
-     Icons stay above via padding — same pattern as native iOS tab bars. */
-  padding: 8px 12px max(8px, var(--safe-bottom));
+  /*
+   * Background fills to the physical bottom (app is fixed inset 0).
+   * Do NOT pad the full 34px safe-area under the icons — that reads as an
+   * empty strip. Keep a tight clearance so the home indicator floats over
+   * the tab bar chrome, like native iOS apps.
+   */
+  padding: 4px 10px 10px;
   background: var(--bg);
-  border-top: 1px solid var(--line);
 }
 
 .tab-pill {
   position: absolute;
-  top: 8px;
-  left: 12px;
-  width: calc((100% - 24px) / 3);
-  height: 52px;
+  top: 4px;
+  left: 10px;
+  width: calc((100% - 20px) / 3);
+  height: 48px;
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 11%, transparent);
   transform: translateX(calc(var(--active) * 100%));
@@ -869,8 +885,8 @@ h1.display {
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 4px;
-  height: 52px;
+  gap: 2px;
+  height: 48px;
   border: 0;
   background: transparent;
   color: var(--muted);
