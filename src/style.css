@@ -849,18 +849,21 @@ h1.display {
 /* ------------------------------------------------------------------ ТАББАР */
 .tabbar {
   --active: 0;
-  /* Меняем на fixed, чтобы панель намертво сидела на своем месте */
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 10;
 
+  /* Сетка на 3 колонки */
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  align-items: start;
 
-  /* ИСПОЛЬЗУЕМ КОРРЕКТНЫЙ env() НАПРЯМУЮ: если iOS не отдаст значение, подставится фолбек 34px */
-  padding: 8px 10px calc(10px + env(safe-area-inset-bottom, 34px));
+  /* Верхний паддинг + безопасный отступ снизу для навигации */
+  padding-top: 8px;
+  padding-inline: 10px;
+  padding-bottom: calc(6px + env(safe-area-inset-bottom, 34px));
 
   background: var(--card);
   background-color: #16211c;
@@ -876,26 +879,30 @@ h1.display {
   }
 }
 
+/* Зеленый фон под активную кнопку теперь растягивается на всю доступную высоту */
 .tab-pill {
   position: absolute;
-  top: 8px;
+  top: 6px;
   left: 10px;
   width: calc((100% - 20px) / 3);
-  height: 44px;
+  bottom: calc(4px + env(safe-area-inset-bottom, 34px)); /* Учитывает безопасную зону */
   border-radius: var(--r-md);
   background: color-mix(in srgb, var(--brand) 14%, transparent);
   transform: translateX(calc(var(--active) * 100%));
   transition: transform 0.42s var(--spring), background 0.3s ease;
 }
 
+/* Сам таб теперь не зажат жесткими 44px, а центрирует контент */
 .tab {
   position: relative;
   z-index: 1;
-  display: grid;
-  justify-items: center;
-  align-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 2px;
-  height: 44px;
+  padding-block: 6px;
+  height: 48px; /* Оптимальная высота под палец */
   border: 0;
   background: transparent;
   color: var(--muted);
