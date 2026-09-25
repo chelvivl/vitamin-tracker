@@ -133,14 +133,12 @@ input {
 }
 
 /*
- * Shell is sized in JS from visualViewport so it matches the pixels the user
- * actually sees — no safe-area math on the bottom edge.
+ * Shell fills the viewport. Bottom safe-area is handled only by the tab bar
+ * chrome (distinct background), never as empty page margin.
  */
 .app {
   position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
+  inset: 0;
   width: 100%;
   max-width: 480px;
   margin-inline: auto;
@@ -846,7 +844,7 @@ h1.display {
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 56px;
+  bottom: calc(60px + env(safe-area-inset-bottom, 0px));
   z-index: 30;
   display: grid;
   justify-items: center;
@@ -873,25 +871,30 @@ h1.display {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 6px 8px 6px;
-  background: var(--bg);
-  background-color: #0b1310;
+  /* Distinct chrome + safe-area fill = looks like a real iOS tab bar, not a void */
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  background: var(--card);
+  background-color: #16211c;
+  border-top: 1px solid var(--line);
+  box-shadow: 0 -12px 32px rgba(0, 0, 0, 0.35);
 }
 
 @media (prefers-color-scheme: light) {
   .tabbar {
-    background-color: #f1f5f2;
+    background: var(--card);
+    background-color: #ffffff;
+    box-shadow: 0 -8px 24px rgba(13, 26, 21, 0.06);
   }
 }
 
 .tab-pill {
   position: absolute;
-  top: 6px;
-  left: 8px;
-  width: calc((100% - 16px) / 3);
+  top: 8px;
+  left: 10px;
+  width: calc((100% - 20px) / 3);
   height: 44px;
   border-radius: var(--r-md);
-  background: color-mix(in srgb, var(--brand) 11%, transparent);
+  background: color-mix(in srgb, var(--brand) 14%, transparent);
   transform: translateX(calc(var(--active) * 100%));
   transition: transform 0.42s var(--spring), background 0.3s ease;
 }

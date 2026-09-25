@@ -49,28 +49,6 @@ function shell() {
   return root.querySelector('.app')
 }
 
-/** Pin the shell to the visible viewport, then grow into the home-indicator band
- *  so the tab bar sits on the physical bottom edge (no empty strip under icons). */
-function syncShellViewport() {
-  const app = shell()
-  if (!app) return
-
-  const vv = window.visualViewport
-  const top = Math.round(vv ? vv.offsetTop : 0)
-  const visible = Math.round(vv ? vv.height : window.innerHeight)
-
-  const probe = document.createElement('div')
-  probe.style.cssText =
-    'position:fixed;left:0;top:0;visibility:hidden;padding-bottom:env(safe-area-inset-bottom,0px)'
-  document.body.appendChild(probe)
-  const inset = Math.round(parseFloat(getComputedStyle(probe).paddingBottom) || 0)
-  probe.remove()
-
-  app.style.top = `${top}px`
-  app.style.height = `${visible + inset}px`
-  app.style.bottom = 'auto'
-}
-
 function screen() {
   return root.querySelector('[data-screen]')
 }
@@ -360,7 +338,6 @@ function mount() {
     </div>
   `
   watchScroll()
-  syncShellViewport()
 }
 
 /** Frost only the status-bar strip while content is scrolled underneath. */
@@ -591,13 +568,7 @@ document.addEventListener(
 
 mount()
 watchForUpdates()
-syncShellViewport()
 
-window.addEventListener('resize', syncShellViewport)
-window.visualViewport?.addEventListener('resize', syncShellViewport)
-window.visualViewport?.addEventListener('scroll', syncShellViewport)
-
-/* Force document background into the iOS home-indicator band. */
 const paintRoot = () => {
   const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1310'
   document.documentElement.style.backgroundColor = color
