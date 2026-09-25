@@ -162,26 +162,10 @@ input {
   top: 0;
   left: 0;
   right: 0;
-  /* Зона острова + мягкий хвост, чтобы blur не обрывался прямоугольником */
-  height: calc(env(safe-area-inset-top, 59px) + 28px);
+  height: calc(env(safe-area-inset-top, 59px) + 24px);
   z-index: 40;
   pointer-events: none;
   overflow: hidden;
-  /* Маска гасит нижний край backdrop-filter — иначе виден грязный стык */
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.55) 72%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    #000 0%,
-    #000 42%,
-    rgba(0, 0, 0, 0.55) 72%,
-    transparent 100%
-  );
 }
 
 .status-frost-inner {
@@ -190,22 +174,28 @@ input {
   background: transparent;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+  /* Маска на том же слое, что и blur — иначе WebKit рисует глухую подложку */
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 20%, transparent 100%);
   transition:
     background 0.35s ease,
     backdrop-filter 0.35s ease,
     -webkit-backdrop-filter 0.35s ease;
 }
 
+/*
+ * Лёгкий tint: плотная заливка (80%+) превращала зону в непрозрачную панель,
+ * и буквы обрывались, вместо размытия.
+ */
 .app.is-scrolled .status-frost-inner {
   background: linear-gradient(
     to bottom,
-    color-mix(in srgb, var(--bg) 82%, transparent) 0%,
-    color-mix(in srgb, var(--bg) 45%, transparent) 48%,
-    color-mix(in srgb, var(--bg) 12%, transparent) 78%,
+    color-mix(in srgb, var(--bg) 38%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 14%, transparent) 50%,
     transparent 100%
   );
-  backdrop-filter: blur(20px) saturate(1.5);
-  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.45);
+  -webkit-backdrop-filter: blur(22px) saturate(1.45);
 }
 
 .page {
