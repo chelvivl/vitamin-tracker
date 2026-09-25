@@ -569,14 +569,10 @@ document.addEventListener(
 mount()
 watchForUpdates()
 
-/* Match tab-bar chrome so iOS home-indicator letterbox isn't a --bg strip */
 const paintRoot = () => {
-  const color =
-    getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#16211c'
+  const color = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#0b1310'
   document.documentElement.style.backgroundColor = color
   document.body.style.backgroundColor = color
-  const app = document.getElementById('app')
-  if (app) app.style.backgroundColor = color
 }
 paintRoot()
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', paintRoot)

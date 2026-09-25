@@ -75,19 +75,13 @@
 }
 
 /*
- * Root fills with tab-bar chrome color so any iOS standalone letterbox under
- * the home indicator matches the tab bar — not a black strip of --bg.
+ * НАЧАЛО ЧИСТЫХ ПРАВОК ДЛЯ КАРКАСА ПРИЛОЖЕНИЯ
+ * Полностью убираем fill-available и костыльные body::after
  */
 html {
-  height: 100%;
-  height: -webkit-fill-available;
-  background-color: #16211c;
-}
-
-@media (prefers-color-scheme: light) {
-  html {
-    background-color: #ffffff;
-  }
+  min-height: 100dvh;
+  height: 100dvh;
+  background-color: var(--bg);
 }
 
 html,
@@ -95,12 +89,11 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: 100dvh;
   overflow: hidden;
   overscroll-behavior: none;
-  background-color: #16211c;
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--ui);
   font-size: 16px;
@@ -112,32 +105,6 @@ body {
   touch-action: manipulation;
 }
 
-@media (prefers-color-scheme: light) {
-  html,
-  body {
-    background-color: #ffffff;
-  }
-}
-
-/* Solid fill under home indicator — survives iOS standalone letterboxing */
-body::after {
-  content: '';
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 48px;
-  background-color: #16211c;
-  pointer-events: none;
-  z-index: 0;
-}
-
-@media (prefers-color-scheme: light) {
-  body::after {
-    background-color: #ffffff;
-  }
-}
-
 button,
 input {
   font: inherit;
@@ -146,22 +113,11 @@ input {
 
 #app {
   width: 100%;
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
-  background-color: #16211c;
+  height: 100dvh;
+  background: var(--bg);
 }
 
-@media (prefers-color-scheme: light) {
-  #app {
-    background-color: #ffffff;
-  }
-}
-
-/*
- * Shell fills the viewport. Bottom safe-area is handled only by the tab bar
- * chrome (distinct background), never as empty page margin.
- */
 .app {
   position: fixed;
   inset: 0;
@@ -173,18 +129,10 @@ input {
   flex-direction: column;
   overflow: hidden;
   background: var(--bg);
-  background-color: #0b1310;
-  /* Reach the real bottom on iOS PWA when 100% falls short of the screen */
-  min-height: 100%;
   min-height: 100dvh;
-  min-height: -webkit-fill-available;
+  height: 100dvh;
 }
-
-@media (prefers-color-scheme: light) {
-  .app {
-    background-color: #f1f5f2;
-  }
-}
+/* КОНЕЦ ИСПРАВЛЕНИЙ ДЛЯ КАРКАСА */
 
 .app-onboard {
   display: flex;
@@ -902,7 +850,7 @@ h1.display {
   flex: 0 0 auto;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  /* Icons above home indicator; chrome color continues into safe-area */
+  /* Фон таб-бара сам заливает зону home indicator */
   padding: 8px 10px calc(8px + var(--safe-bottom));
   background: var(--card);
   background-color: #16211c;
