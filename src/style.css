@@ -128,8 +128,8 @@ input {
 }
 
 /*
- * Scroller starts at y=0 (content can pass through the status-bar row while
- * scrolling). Padding keeps resting content clear of the clock / island.
+ * Scroller starts at y=0 so content can pass under the status bar while
+ * scrolling. Resting content stays BELOW the red line (safe-top).
  */
 .screen {
   position: relative;
@@ -137,8 +137,39 @@ input {
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: calc(var(--safe-top) + 8px) 18px 14px;
+  padding: calc(var(--safe-top) + 12px) 18px 14px;
   background: transparent;
+}
+
+/*
+ * Frost ONLY the Dynamic Island / status-bar strip (exactly safe-top tall).
+ * overflow:hidden clips backdrop-filter bleed that would otherwise soften
+ * the first line of content below the red line.
+ */
+.status-frost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--safe-top);
+  z-index: 40;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.status-frost-inner {
+  position: absolute;
+  inset: 0;
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: background 0.25s ease, backdrop-filter 0.25s ease, -webkit-backdrop-filter 0.25s ease;
+}
+
+.app.is-scrolled .status-frost-inner {
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  backdrop-filter: blur(16px) saturate(1.6);
+  -webkit-backdrop-filter: blur(16px) saturate(1.6);
 }
 
 .page {
@@ -163,11 +194,14 @@ h1.display {
 
 .eyebrow {
   margin: 0;
-  color: var(--muted);
-  font-size: 0.74rem;
-  font-weight: 600;
-  letter-spacing: 0.09em;
+  color: color-mix(in srgb, var(--ink) 55%, var(--muted));
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
+  /* Keep this line razor-sharp — no transforms/filters on the header. */
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
 }
 
 .lead {
@@ -188,7 +222,7 @@ h1.display {
   align-items: flex-start;
   justify-content: space-between;
   gap: 14px;
-  padding: 6px 2px 2px;
+  padding: 4px 2px 2px;
 }
 
 /* ------------------------------------------------------------------ streak */
@@ -703,25 +737,26 @@ h1.display {
 .glow {
   position: absolute;
   border-radius: 50%;
-  filter: blur(46px);
-  opacity: 0.3;
+  opacity: 0.35;
   pointer-events: none;
+  /* Soft edges via gradient only — never filter:blur (it bleeds onto nearby UI). */
+  background: radial-gradient(circle, var(--glow-color, var(--tint)) 0%, transparent 70%);
 }
 
 .glow-a {
-  width: 210px;
-  height: 210px;
-  top: 6%;
-  right: -60px;
-  background: var(--spirulina-tint);
+  width: 240px;
+  height: 240px;
+  top: 0%;
+  right: -70px;
+  --glow-color: var(--spirulina-tint);
 }
 
 .glow-b {
-  width: 190px;
-  height: 190px;
-  bottom: 8%;
-  left: -66px;
-  background: var(--chlorella-tint);
+  width: 220px;
+  height: 220px;
+  bottom: 6%;
+  left: -70px;
+  --glow-color: var(--chlorella-tint);
 }
 
 .pick {
