@@ -1,11 +1,12 @@
 import './style.css'
 import {
-  VITAMINS,
   ORDER,
+  VITAMINS,
   dayKey,
   formatLongDate,
   formatShortDate,
   otherVitamin,
+  parseDayKey,
   plannedVitamin,
   weekdayShort,
 } from './lib.js'
@@ -19,125 +20,90 @@ import {
   streakCount,
   weekStrip,
 } from './store.js'
+import {
+  animateRowIn,
+  animateRowOut,
+  celebrate,
+  crossfade,
+  haptic,
+  pulse,
+  slideIn,
+  toast,
+} from './ui.js'
+
+const TABS = [
+  { id: 'today', label: 'Сегодня' },
+  { id: 'history', label: 'История' },
+  { id: 'more', label: 'Ещё' },
+]
+
+const root = document.querySelector('#app')
 
 let state = loadState()
-let celebrate = false
 let draftVitamin = 'spirulina'
-let formError = ''
+let paintedDay = dayKey()
 
-function persist() {
-  saveState(state)
+const todayVitamin = () => plannedVitamin(new Date(), state.settings)
+const persist = () => saveState(state)
+const shell = () => root.querySelector('.app')
+const screen = () => root.querySelector('[data-screen]')
+
+/* ---------------------------------------------------------------- icons */
+
+const ICONS = {
+  today: `<path d="M8 3.5v3M16 3.5v3M4.5 9.6h15" stroke-linecap="round"/><rect x="4" y="5" width="16" height="15" rx="4"/><path d="M9.2 14.4l2 2 3.9-4.2" stroke-linecap="round" stroke-linejoin="round"/>`,
+  history: `<circle cx="12" cy="12" r="8.2"/><path d="M12 7.9v4.3l2.9 1.7" stroke-linecap="round" stroke-linejoin="round"/>`,
+  more: `<path d="M4.5 7.5h15M4.5 12h15M4.5 16.5h9" stroke-linecap="round"/>`,
+  close: `<path d="M7 7l10 10M17 7L7 17" stroke-linecap="round"/>`,
+  plus: `<path d="M12 5.5v13M5.5 12h13" stroke-linecap="round"/>`,
 }
 
-function setTab(tab) {
-  state = { ...state, tab }
-  formError = ''
-  if (tab === 'history' && state.settings) {
-    draftVitamin = plannedVitamin(new Date(), state.settings) || draftVitamin
-  }
-  persist()
-  render()
-}
-
-function bump() {
-  try {
-    navigator.vibrate?.(12)
-  } catch {
-    /* ignore */
-  }
-}
-
-function takeToday() {
-  if (!state.settings) return
-  const key = dayKey()
-  const vitamin = plannedVitamin(new Date(), state.settings)
-  const already = state.log[key]?.taken
-  if (already) {
-    state = setTaken(state, key, false)
-    celebrate = false
-  } else {
-    state = setTaken(state, key, true, vitamin)
-    celebrate = true
-    bump()
-    window.setTimeout(() => {
-      celebrate = false
-      render()
-    }, 900)
-  }
-  persist()
-  render()
-}
-
-function addHistoryEntry(dateValue, vitamin) {
-  if (!dateValue || !vitamin) {
-    formError = 'Укажи дату и витамин'
-    render()
-    return
-  }
-  const key = dateValue
-  state = setTaken(state, key, true, vitamin)
-  draftVitamin = vitamin
-  formError = ''
-  bump()
-  persist()
-  render()
-}
-
-function removeHistoryEntry(key) {
-  state = setTaken(state, key, false)
-  persist()
-  render()
-}
-
-function startOnboarding(vitaminId) {
-  state = {
-    ...state,
-    settings: bootstrapSettings(vitaminId),
-    tab: 'today',
-  }
-  draftVitamin = vitaminId
-  persist()
-  render()
-}
-
-function swapSchedule() {
-  state = { ...state, settings: invertSchedule(state.settings) }
-  persist()
-  render()
-}
-
-function icon(name) {
-  if (name === 'today') {
-    return `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3.5v3M16 3.5v3M4.5 9.5h15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><rect x="4" y="5" width="16" height="15" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9 14.2l2 2 4.2-4.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-  }
-  if (name === 'history') {
-    return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7.8v4.4l3 1.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-  }
-  return `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M5.8 19.2a6.2 6.2 0 0 1 12.4 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
-}
+const icon = (name, cls = '') =>
+  `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">${ICONS[name]}</svg>`
 
 function algaeMark(id) {
   if (id === 'spirulina') {
-    return `<svg class="mark-svg" viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id="sg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5EEAD4"/><stop offset="1" stop-color="#0F766E"/></linearGradient></defs><circle cx="40" cy="40" r="30" fill="url(#sg)" opacity=".25"/><path d="M24 48c8-18 24-28 36-26-10 8-16 20-14 34-10-2-18-4-22-8Z" fill="url(#sg)"/><path d="M28 30c6 2 10 8 9 16" fill="none" stroke="#99F6E4" stroke-width="3" stroke-linecap="round" opacity=".7"/></svg>`
+    return `<svg class="mark" viewBox="0 0 96 96" aria-hidden="true">
+      <defs><linearGradient id="gs" x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color="#7FE6D6"/><stop offset="1" stop-color="#0D6F66"/>
+      </linearGradient></defs>
+      <circle cx="48" cy="48" r="34" fill="url(#gs)" opacity=".16"/>
+      <path d="M28 62C36 38 54 26 70 26c-12 11-18 24-16 40-11-1-21-2-26-4Z" fill="url(#gs)"/>
+      <path d="M36 42c8 3 12 11 11 20" fill="none" stroke="#DFFBF5" stroke-width="3.4" stroke-linecap="round" opacity=".75"/>
+    </svg>`
   }
-  return `<svg class="mark-svg" viewBox="0 0 80 80" aria-hidden="true"><defs><linearGradient id="cg" x1="0" y1="1" x2="1" y2="0"><stop stop-color="#86EFAC"/><stop offset="1" stop-color="#166534"/></linearGradient></defs><circle cx="40" cy="40" r="30" fill="url(#cg)" opacity=".22"/><circle cx="40" cy="40" r="16" fill="url(#cg)"/><circle cx="40" cy="40" r="6" fill="#DCFCE7" opacity=".85"/><circle cx="28" cy="28" r="5" fill="url(#cg)" opacity=".7"/><circle cx="54" cy="30" r="4" fill="url(#cg)" opacity=".55"/></svg>`
+  return `<svg class="mark" viewBox="0 0 96 96" aria-hidden="true">
+    <defs><linearGradient id="gc" x1="0" y1="1" x2="1" y2="0">
+      <stop stop-color="#9BE49B"/><stop offset="1" stop-color="#256B30"/>
+    </linearGradient></defs>
+    <circle cx="48" cy="48" r="34" fill="url(#gc)" opacity=".15"/>
+    <circle cx="48" cy="49" r="19" fill="url(#gc)"/>
+    <circle cx="48" cy="49" r="7" fill="#EAFBEA" opacity=".9"/>
+    <circle cx="32" cy="33" r="6" fill="url(#gc)" opacity=".65"/>
+    <circle cx="65" cy="35" r="4.6" fill="url(#gc)" opacity=".5"/>
+  </svg>`
 }
 
-function onboarding() {
+/* ------------------------------------------------------------ templates */
+
+function onboardingHtml() {
   return `
-    <section class="onboard enter">
-      <div class="orb orb-a"></div>
-      <div class="orb orb-b"></div>
+    <section class="page onboard">
+      <div class="glow glow-a" aria-hidden="true"></div>
+      <div class="glow glow-b" aria-hidden="true"></div>
       <p class="eyebrow">Водоросли</p>
-      <h1>Что принимаешь<br/>сегодня?</h1>
-      <p class="lead">Дальше приложение само чередует спирулину и хлореллу каждый день.</p>
-      <div class="pick-grid">
+      <h1 class="display">Что принимаешь<br/>сегодня?</h1>
+      <p class="lead">Дальше приложение само чередует спирулину и хлореллу — день через день.</p>
+      <div class="pick">
         ${ORDER.map(
           (id) => `
-          <button class="pick-card vitamin-${id}" type="button" data-boot="${id}">
-            <span class="pick-visual">${algaeMark(id)}</span>
-            <span class="pick-name">${VITAMINS[id].name}</span>
-            <span class="pick-hint">${VITAMINS[id].hint}</span>
+          <button class="pick-card" type="button" data-boot="${id}" data-vitamin="${id}">
+            <span class="pick-mark">${algaeMark(id)}</span>
+            <span class="pick-text">
+              <strong>${VITAMINS[id].name}</strong>
+              <span>${VITAMINS[id].hint}</span>
+            </span>
+            <span class="pick-go" aria-hidden="true">→</span>
           </button>`,
         ).join('')}
       </div>
@@ -145,252 +111,402 @@ function onboarding() {
   `
 }
 
-function screenToday() {
-  const today = new Date()
-  const vitaminId = plannedVitamin(today, state.settings)
-  const vit = VITAMINS[vitaminId]
-  const tomorrow = VITAMINS[otherVitamin(vitaminId)]
-  const key = dayKey(today)
-  const taken = Boolean(state.log[key]?.taken)
+function todayHtml() {
+  const now = new Date()
+  const id = todayVitamin()
+  const taken = Boolean(state.log[dayKey(now)]?.taken)
   const streak = streakCount(state)
-  const week = weekStrip(state)
 
   return `
-    <section class="today-screen vitamin-${vitaminId} ${celebrate ? 'is-celebrate' : ''} enter">
-      <div class="ambient" aria-hidden="true">
-        <span class="blob b1"></span>
-        <span class="blob b2"></span>
-        <span class="blob b3"></span>
-      </div>
-
-      <header class="top-line">
+    <section class="page today" data-vitamin="${id}">
+      <header class="head">
         <div>
-          <p class="eyebrow">${formatLongDate(today)}</p>
-          <h1>Сегодня</h1>
+          <p class="eyebrow">${formatLongDate(now)}</p>
+          <h1 class="display">Сегодня</h1>
         </div>
-        <div class="streak ${streak ? 'has' : ''}" title="Серия дней подряд">
-          <span class="streak-fire" aria-hidden="true">✦</span>
-          <span>${streak}</span>
+        <div class="streak ${streak ? 'has' : ''}" title="Дней подряд">
+          <span class="streak-dot" aria-hidden="true"></span>
+          <span data-streak>${streak}</span>
         </div>
       </header>
 
       <div class="week" role="list">
-        ${week
+        ${weekStrip(state)
           .map(
             (d) => `
-          <div class="week-day ${d.isToday ? 'is-today' : ''} ${d.taken ? 'is-taken' : ''} vitamin-${d.vitamin || ''}" role="listitem">
-            <span class="wd">${weekdayShort(d.date)}</span>
-            <span class="dn">${d.date.getDate()}</span>
-            <span class="dot">${d.vitamin ? VITAMINS[d.vitamin].short : '·'}</span>
+          <div class="wk ${d.isToday ? 'is-today' : ''} ${d.taken ? 'is-taken' : ''}"
+               data-vitamin="${d.vitamin || ''}" data-key="${d.key}" role="listitem">
+            <span class="wk-d">${weekdayShort(d.date)}</span>
+            <span class="wk-n">${d.date.getDate()}</span>
+            <span class="wk-m">${d.vitamin ? VITAMINS[d.vitamin].short : '·'}</span>
           </div>`,
           )
           .join('')}
       </div>
 
-      <article class="hero-card">
-        <div class="hero-visual">${algaeMark(vitaminId)}</div>
-        <p class="hero-kicker">${taken ? 'Принято' : 'На сегодня'}</p>
-        <h2 class="hero-title">${vit.name}</h2>
-        <p class="hero-sub">Завтра — ${tomorrow.name}</p>
-
-        <button class="cta ${taken ? 'is-done' : ''}" type="button" data-action="take" aria-pressed="${taken}">
-          <span class="cta-glow" aria-hidden="true"></span>
-          <span class="cta-label">${taken ? 'Отменить отметку' : 'Отметить приём'}</span>
-          <span class="cta-check" aria-hidden="true"></span>
+      <article class="hero ${taken ? 'is-taken' : ''}">
+        <div class="hero-mark">${algaeMark(id)}</div>
+        <p class="hero-kicker" data-kicker>${taken ? 'Принято' : 'На сегодня'}</p>
+        <h2 class="hero-title display">${VITAMINS[id].name}</h2>
+        <p class="hero-next">Завтра — ${VITAMINS[otherVitamin(id)].name}</p>
+        <button class="btn ${taken ? 'btn-soft' : 'btn-primary'}" type="button"
+                data-action="take" aria-pressed="${taken}">
+          <span data-cta-label>${taken ? 'Отменить отметку' : 'Отметить приём'}</span>
         </button>
       </article>
 
-      <p class="foot-hint">Чередование: день через день. Расписание можно поправить во вкладке «Ещё».</p>
+      <p class="note">Расписание можно поменять во вкладке «Ещё».</p>
     </section>
   `
 }
 
-function screenHistory() {
+function logRowHtml(entry) {
+  const vit = VITAMINS[entry.vitamin]
+  const isToday = entry.key === dayKey()
+  return `
+    <li class="log-row" data-row="${entry.key}" data-vitamin="${entry.vitamin}">
+      <span class="log-badge" aria-hidden="true">${vit?.short || '·'}</span>
+      <span class="log-text">
+        <strong>${formatShortDate(entry.date)}</strong>
+        <span>${weekdayShort(entry.date)}${isToday ? ' · сегодня' : ''}</span>
+      </span>
+      <span class="log-vit">${vit?.name || '—'}</span>
+      <button class="log-del" type="button" data-remove="${entry.key}" aria-label="Удалить запись">
+        ${icon('close')}
+      </button>
+    </li>
+  `
+}
+
+function emptyLogHtml() {
+  return `
+    <div class="empty">
+      <span class="empty-mark" aria-hidden="true">${algaeMark('spirulina')}</span>
+      <p class="empty-title">Журнал пуст</p>
+      <p class="empty-text">Добавь дату и витамин выше — или отметь приём на вкладке «Сегодня».</p>
+    </div>
+  `
+}
+
+function historyHtml() {
   const entries = loggedEntries(state)
   const today = dayKey()
+  const activeIndex = ORDER.indexOf(draftVitamin)
+
   return `
-    <section class="history-screen enter">
-      <header class="top-line">
+    <section class="page history">
+      <header class="head">
         <div>
           <p class="eyebrow">Журнал</p>
-          <h1>История</h1>
+          <h1 class="display">История</h1>
         </div>
       </header>
 
-      <form class="add-card" data-form="add-entry">
-        <p class="settings-label">Добавить приём</p>
-        <label class="field">
-          <span>Дата</span>
-          <input class="date-input" type="date" name="date" value="${today}" max="${today}" required />
-        </label>
-        <div class="vit-switch" role="group" aria-label="Витамин">
-          ${ORDER.map(
-            (id) => `
-            <button type="button" class="vit-chip vitamin-${id} ${draftVitamin === id ? 'is-selected' : ''}" data-draft-vitamin="${id}">
-              ${VITAMINS[id].name}
-            </button>`,
-          ).join('')}
+      <form class="card add" data-form="add" data-vitamin="${draftVitamin}">
+        <div class="field">
+          <label class="field-label" for="entry-date">Дата</label>
+          <input class="input" id="entry-date" type="date" name="date"
+                 value="${today}" max="${today}" required />
         </div>
-        ${formError ? `<p class="form-error">${formError}</p>` : ''}
-        <button class="cta add-cta" type="submit">Добавить</button>
+
+        <div class="field">
+          <span class="field-label">Витамин</span>
+          <div class="seg" style="--active:${activeIndex}" role="group" aria-label="Витамин">
+            <span class="seg-thumb" aria-hidden="true"></span>
+            ${ORDER.map(
+              (id) => `
+              <button class="seg-btn ${id === draftVitamin ? 'is-active' : ''}" type="button"
+                      data-draft="${id}" aria-pressed="${id === draftVitamin}">
+                ${VITAMINS[id].name}
+              </button>`,
+            ).join('')}
+          </div>
+        </div>
+
+        <button class="btn btn-primary" type="submit">
+          ${icon('plus')}<span>Добавить запись</span>
+        </button>
       </form>
 
-      ${
-        entries.length === 0
-          ? `<div class="empty-history">
-              <p class="empty-title">Пока пусто</p>
-              <p class="empty-text">Добавь дату и витамин вручную — или отметь приём на вкладке «Сегодня».</p>
-            </div>`
-          : `<ul class="history-list">
-              ${entries
-                .map((d) => {
-                  const vit = VITAMINS[d.vitamin]
-                  return `
-                  <li class="history-item vitamin-${d.vitamin} is-taken">
-                    <div class="history-main static-row">
-                      <span class="h-date">
-                        <strong>${formatShortDate(d.date)}</strong>
-                        <span>${weekdayShort(d.date)}${d.key === today ? ' · сегодня' : ''}</span>
-                      </span>
-                      <span class="h-vit">${vit ? vit.name : '—'}</span>
-                    </div>
-                    <button class="history-delete" type="button" data-remove-day="${d.key}" aria-label="Удалить">✕</button>
-                  </li>`
-                })
-                .join('')}
-            </ul>`
-      }
+      <div data-log>
+        ${
+          entries.length
+            ? `<ul class="log">${entries.map(logRowHtml).join('')}</ul>`
+            : emptyLogHtml()
+        }
+      </div>
     </section>
   `
 }
 
-function screenMore() {
-  const todayId = plannedVitamin(new Date(), state.settings)
-  const tomorrowId = otherVitamin(todayId)
+function moreHtml() {
+  const id = todayVitamin()
+  const next = otherVitamin(id)
   return `
-    <section class="more-screen enter">
-      <header class="top-line">
+    <section class="page more">
+      <header class="head">
         <div>
           <p class="eyebrow">Настройки</p>
-          <h1>Ещё</h1>
+          <h1 class="display">Ещё</h1>
         </div>
       </header>
 
-      <div class="settings-card">
-        <p class="settings-label">Сейчас в расписании</p>
-        <div class="pair">
-          <div class="pair-item vitamin-${todayId}">
-            <span>Сегодня</span>
-            <strong>${VITAMINS[todayId].name}</strong>
+      <div class="card">
+        <p class="card-label">Расписание</p>
+        <div class="pair" data-pair>
+          <div class="pair-item" data-vitamin="${id}">
+            <span>Сегодня</span><strong>${VITAMINS[id].name}</strong>
           </div>
-          <div class="pair-swap" aria-hidden="true">⇄</div>
-          <div class="pair-item vitamin-${tomorrowId}">
-            <span>Завтра</span>
-            <strong>${VITAMINS[tomorrowId].name}</strong>
+          <div class="pair-item" data-vitamin="${next}">
+            <span>Завтра</span><strong>${VITAMINS[next].name}</strong>
           </div>
         </div>
-        <button class="ghost-btn" type="button" data-action="swap">
-          Поменять местами
-        </button>
+        <button class="btn btn-soft" type="button" data-action="swap">Поменять местами</button>
       </div>
 
-      <div class="settings-card muted-card">
-        <p class="settings-label">Как это работает</p>
-        <p class="settings-text">Спирулина и хлорелла чередуются каждый день. В истории можно вручную добавить прошлые приёмы.</p>
+      <div class="card">
+        <p class="card-label">Как это работает</p>
+        <p class="card-text">Спирулина и хлорелла идут через день. Пропущенные приёмы можно внести вручную в «Истории».</p>
       </div>
     </section>
   `
 }
 
-const TABS = [
-  { id: 'today', label: 'Сегодня', icon: 'today' },
-  { id: 'history', label: 'История', icon: 'history' },
-  { id: 'more', label: 'Ещё', icon: 'more' },
-]
+/* ---------------------------------------------------------------- render */
 
-function bind() {
-  const app = document.querySelector('#app')
-
-  app.querySelectorAll('[data-boot]').forEach((btn) => {
-    btn.addEventListener('click', () => startOnboarding(btn.dataset.boot))
-  })
-
-  app.querySelectorAll('[data-tab]').forEach((btn) => {
-    btn.addEventListener('click', () => setTab(btn.dataset.tab))
-  })
-
-  app.querySelector('[data-action="take"]')?.addEventListener('click', takeToday)
-  app.querySelector('[data-action="swap"]')?.addEventListener('click', swapSchedule)
-
-  app.querySelectorAll('[data-draft-vitamin]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      draftVitamin = btn.dataset.draftVitamin
-      formError = ''
-      render()
-    })
-  })
-
-  app.querySelector('[data-form="add-entry"]')?.addEventListener('submit', (e) => {
-    e.preventDefault()
-    const form = e.currentTarget
-    const dateValue = form.elements.date?.value
-    addHistoryEntry(dateValue, draftVitamin)
-  })
-
-  app.querySelectorAll('[data-remove-day]').forEach((btn) => {
-    btn.addEventListener('click', () => removeHistoryEntry(btn.dataset.removeDay))
-  })
+function screenHtml(tab) {
+  if (tab === 'history') return historyHtml()
+  if (tab === 'more') return moreHtml()
+  return todayHtml()
 }
 
-function render() {
-  const app = document.querySelector('#app')
-  const ready = Boolean(state.settings)
-  const tab = state.tab || 'today'
-
-  if (!ready) {
-    app.innerHTML = `<div class="app-shell onboard-shell">${onboarding()}</div>`
-    bind()
+function mount() {
+  if (!state.settings) {
+    root.innerHTML = `<div class="app app-onboard" data-vitamin="spirulina">
+      <span class="veil" aria-hidden="true"></span>
+      ${onboardingHtml()}
+    </div>`
     return
   }
 
-  const body =
-    tab === 'history' ? screenHistory() : tab === 'more' ? screenMore() : screenToday()
-
-  const vitaminId = plannedVitamin(new Date(), state.settings)
-
-  app.innerHTML = `
-    <div class="app-shell theme-${vitaminId}">
-      <main class="screen">${body}</main>
-      <nav class="tabbar" aria-label="Навигация">
-        ${TABS.map((t) => {
-          const active = tab === t.id
-          return `
-            <button class="tab ${active ? 'is-active' : ''}" type="button" data-tab="${t.id}" aria-current="${active ? 'page' : 'false'}">
-              <span class="tab-icon">${icon(t.icon)}</span>
-              <span class="tab-label">${t.label}</span>
-            </button>`
-        }).join('')}
+  const tab = state.tab || 'today'
+  root.innerHTML = `
+    <div class="app" data-vitamin="${todayVitamin()}">
+      <span class="veil" aria-hidden="true"></span>
+      <main class="screen" data-screen>${screenHtml(tab)}</main>
+      <div class="toast-host" data-toasts></div>
+      <nav class="tabbar" style="--active:${TABS.findIndex((t) => t.id === tab)}" aria-label="Навигация">
+        <span class="tab-pill" aria-hidden="true"></span>
+        ${TABS.map(
+          (t) => `
+          <button class="tab ${t.id === tab ? 'is-active' : ''}" type="button"
+                  data-tab="${t.id}" aria-current="${t.id === tab ? 'page' : 'false'}">
+            ${icon(t.id)}<span class="tab-label">${t.label}</span>
+          </button>`,
+        ).join('')}
       </nav>
     </div>
   `
-  bind()
 }
 
+function switchTab(tab) {
+  const current = state.tab || 'today'
+  if (tab === current) return
+
+  const direction = TABS.findIndex((t) => t.id === tab) > TABS.findIndex((t) => t.id === current) ? 1 : -1
+  state = { ...state, tab }
+  if (tab === 'history') draftVitamin = todayVitamin() || draftVitamin
+  persist()
+
+  const view = screen()
+  view.innerHTML = screenHtml(tab)
+  view.scrollTop = 0
+  slideIn(view.firstElementChild, direction)
+
+  const bar = root.querySelector('.tabbar')
+  bar.style.setProperty('--active', String(TABS.findIndex((t) => t.id === tab)))
+  bar.querySelectorAll('.tab').forEach((btn) => {
+    const active = btn.dataset.tab === tab
+    btn.classList.toggle('is-active', active)
+    btn.setAttribute('aria-current', active ? 'page' : 'false')
+  })
+}
+
+/* --------------------------------------------------------------- actions */
+
+function start(vitamin) {
+  state = { ...state, settings: bootstrapSettings(vitamin), tab: 'today' }
+  draftVitamin = vitamin
+  persist()
+  mount()
+  crossfade(shell())
+}
+
+function takeToday() {
+  const key = dayKey()
+  const taken = !state.log[key]?.taken
+  state = taken ? setTaken(state, key, true, todayVitamin()) : setTaken(state, key, false)
+  persist()
+
+  const hero = root.querySelector('.hero')
+  hero.classList.toggle('is-taken', taken)
+  hero.querySelector('[data-kicker]').textContent = taken ? 'Принято' : 'На сегодня'
+
+  const cta = root.querySelector('[data-action="take"]')
+  cta.classList.toggle('btn-primary', !taken)
+  cta.classList.toggle('btn-soft', taken)
+  cta.setAttribute('aria-pressed', String(taken))
+  cta.querySelector('[data-cta-label]').textContent = taken ? 'Отменить отметку' : 'Отметить приём'
+
+  const streak = streakCount(state)
+  const chip = root.querySelector('.streak')
+  chip.classList.toggle('has', streak > 0)
+  chip.querySelector('[data-streak]').textContent = String(streak)
+
+  root.querySelector(`.wk[data-key="${key}"]`)?.classList.toggle('is-taken', taken)
+
+  if (taken) {
+    haptic()
+    celebrate(hero, hero.querySelector('.mark'))
+  }
+}
+
+function selectDraft(vitamin) {
+  if (draftVitamin === vitamin) return
+  draftVitamin = vitamin
+
+  const form = root.querySelector('[data-form="add"]')
+  form.dataset.vitamin = vitamin
+  const seg = form.querySelector('.seg')
+  seg.style.setProperty('--active', String(ORDER.indexOf(vitamin)))
+  seg.querySelectorAll('.seg-btn').forEach((btn) => {
+    const active = btn.dataset.draft === vitamin
+    btn.classList.toggle('is-active', active)
+    btn.setAttribute('aria-pressed', String(active))
+  })
+}
+
+function addEntry(form) {
+  const key = form.elements.date?.value
+  if (!key) return
+
+  const existed = Boolean(state.log[key]?.taken)
+  state = setTaken(state, key, true, draftVitamin)
+  persist()
+  haptic()
+
+  const host = root.querySelector('[data-log]')
+  const entry = { key, date: parseDayKey(key), vitamin: draftVitamin }
+
+  if (existed) {
+    const row = host.querySelector(`[data-row="${key}"]`)
+    row.outerHTML = logRowHtml(entry)
+    pulse(host.querySelector(`[data-row="${key}"]`))
+    notify('Запись обновлена')
+    return
+  }
+
+  let list = host.querySelector('.log')
+  if (!list) {
+    host.innerHTML = '<ul class="log"></ul>'
+    list = host.querySelector('.log')
+    crossfade(list)
+  }
+
+  const template = document.createElement('template')
+  template.innerHTML = logRowHtml(entry).trim()
+  const node = template.content.firstElementChild
+  const before = [...list.children].find((child) => child.dataset.row < key)
+  list.insertBefore(node, before || null)
+  animateRowIn(node)
+  notify('Добавлено')
+}
+
+function removeEntry(key) {
+  const row = root.querySelector(`[data-row="${key}"]`)
+  if (!row) return
+  state = setTaken(state, key, false)
+  persist()
+  haptic(8)
+
+  animateRowOut(row).then(() => {
+    const host = root.querySelector('[data-log]')
+    if (host && !host.querySelector('.log-row')) {
+      host.innerHTML = emptyLogHtml()
+      crossfade(host.firstElementChild)
+    }
+  })
+}
+
+function swapSchedule() {
+  state = { ...state, settings: invertSchedule(state.settings) }
+  persist()
+  haptic()
+
+  const id = todayVitamin()
+  shell().dataset.vitamin = id
+
+  const pair = root.querySelector('[data-pair]')
+  const next = otherVitamin(id)
+  pair.innerHTML = `
+    <div class="pair-item" data-vitamin="${id}"><span>Сегодня</span><strong>${VITAMINS[id].name}</strong></div>
+    <div class="pair-item" data-vitamin="${next}"><span>Завтра</span><strong>${VITAMINS[next].name}</strong></div>
+  `
+  crossfade(pair)
+}
+
+function notify(message) {
+  toast(root.querySelector('[data-toasts]'), message)
+}
+
+/* -------------------------------------------------------------- bindings */
+
+root.addEventListener('click', (event) => {
+  const target = event.target
+  const hit = (selector) => target.closest(selector)
+
+  const boot = hit('[data-boot]')
+  if (boot) return start(boot.dataset.boot)
+
+  const tab = hit('[data-tab]')
+  if (tab) return switchTab(tab.dataset.tab)
+
+  if (hit('[data-action="take"]')) return takeToday()
+  if (hit('[data-action="swap"]')) return swapSchedule()
+
+  const draft = hit('[data-draft]')
+  if (draft) return selectDraft(draft.dataset.draft)
+
+  const remove = hit('[data-remove]')
+  if (remove) return removeEntry(remove.dataset.remove)
+})
+
+root.addEventListener('submit', (event) => {
+  if (!event.target.matches('[data-form="add"]')) return
+  event.preventDefault()
+  addEntry(event.target)
+})
+
+// Block rubber-banding outside the scrollable screen, keep native scroll inside.
 document.addEventListener(
   'touchmove',
-  (e) => {
-    if (!e.target.closest?.('.screen, .history-list, .onboard')) e.preventDefault()
+  (event) => {
+    if (!event.target.closest?.('.screen, .onboard')) event.preventDefault()
   },
   { passive: false },
 )
 
-render()
+mount()
 
-// Keep "today" fresh around midnight if app stays open
 setInterval(() => {
   const key = dayKey()
-  if (state._paintDay !== key) {
-    state._paintDay = key
-    render()
+  if (key === paintedDay) return
+  paintedDay = key
+  if ((state.tab || 'today') === 'today') {
+    const view = screen()
+    if (view) {
+      view.innerHTML = screenHtml('today')
+      crossfade(view.firstElementChild)
+    }
   }
 }, 60_000)
